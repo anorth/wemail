@@ -56,7 +56,15 @@ textarea {
    Author's custom styles
    ========================================================================== */
 
+#container {
+  width: 800px;
+  margin: 0 auto 0 auto;
+}
 
+#firepad {
+  height: 400px;
+  border: 1px solid #cccccc;
+}
 
 
 

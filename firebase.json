@@ -1,0 +1,9 @@
+{
+  "firebase": "wemail",
+  "public": ".",
+  "ignore": [
+    "firebase.json",
+    "**/.*",
+    "**/node_modules/**"
+  ]
+}
