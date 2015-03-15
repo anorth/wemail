@@ -1,7 +1,7 @@
 (function () {
   var firebase = new Firebase("https://wemail.firebaseio.com/");
   var firepad;
-  bind();
+  bindEvents();
 
   firebase.onAuth(function(authData) {
     if (authData) {
@@ -11,8 +11,8 @@
       ' <' + authData.google.email + '>';
       // Note: user data is not (yet) persisted to firebase
 
-      var padId = window.location.hash.slice(1) || undefined;
-      firepad = initFirepad(authData.uid, padId);
+      bindData(authData.uid);
+      setupPad(authData.uid);
     } else {
       document.getElementById("signedin").innerText = "No";
       console.log("User is logged out");
@@ -20,9 +20,7 @@
   });
 
 
-
-
-  function bind() {
+  function bindEvents() {
     document.getElementById("signin").onclick = function() {
       firebase.authWithOAuthPopup("google", function(error, authData) {
         if (error) {
@@ -47,19 +45,47 @@
       firebase.unauth();
       window.location.reload();
     };
+
+    window.onhashchange = function() {
+      var uid = firebase.getAuth().uid;
+      setupPad(uid);
+    };
+  }
+
+  function bindData(uid) {
+    firebase.child('users').child(uid).child('pads').on('value', function(snap) {
+      var html = '';
+      _.forOwn(snap.val(), function(val, key) {
+        console.log(val, key);
+        html += ' <a href="#' + key + '">' + key + '</a>';
+      });
+      document.getElementById('otherpads').innerHTML = html;
+    });
+
+  }
+
+  function setupPad(userId) {
+    var padId = window.location.hash.slice(1) || newPad(userId);
+    firebase.child('users').child(userId).child('pads').child(padId).set('1');
+    firepad = initFirepad(userId, padId);
+
+    initFirepad(userId, padId);
+  }
+
+  function newPad(userId) {
+    var padRef = firebase.child('pads').push();
+    return padRef.key();
   }
 
   function initFirepad(userId, padId) {
-    var pads = firebase.child('pads');
-    var padRef;
-    if (!!padId) {
-      padRef = pads.child(padId);
-    } else {
-      padRef = pads.push();
-      padId = padRef.key();
-    }
+    if (!padId) { throw "No pad!"; }
 
-    var codeMirror = CodeMirror(document.getElementById('firepad'), {lineWrapping: true});
+    if (!!firepad) { firepad.dispose(); }
+    var padEl = document.getElementById('firepad');
+    padEl.innerHTML = '';
+
+    var codeMirror = CodeMirror(padEl, {lineWrapping: true});
+    var padRef = firebase.child('pads').child(padId);
     var firepad = Firepad.fromCodeMirror(padRef, codeMirror, {
       userId: userId,
       richTextShortcuts: true,
@@ -69,7 +95,6 @@
 
     firepad.on('ready', function() { console.log("Firepad ready"); });
     firepad.on('synced', function() { console.log("Firepad synced"); });
-    document.getElementById('padid').innerText = padId;
     window.location.hash = padId;
     return firepad;
   }
