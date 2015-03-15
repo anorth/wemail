@@ -38,7 +38,24 @@
       <p>
         Pads: <span id="otherpads"></span>
       </p>
-      <div id="firepad"></div>
+      <div id="panels">
+        <div id="leftpanel">
+          <form id="headers">
+            <label for="label-to">To</label>: <input type="text" name="to" id="label-to"/><br/>
+            <label for="label-from">From</label>: <input type="text" name="from" id="label-from" readonly/><br/>
+            <label for="label-subj">Subject</label>: <input type="text" name="subject" id="label-subj"/><br/>
+          </form>
+          <div id="firepad"></div>
+        </div>
+        <div id="rightpanel">
+          <form id="invitation">
+            <input type="email" name="email" placeholder="colleague@company.com"/>
+            <button name="invite" id="invite">Invite</button>
+          </form>
+          <ul id="invited"></ul>
+          <div id="chat"></div>
+        </div>
+      </div>
 
     </div>
 

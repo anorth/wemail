@@ -5,20 +5,17 @@
 
   firebase.onAuth(function(authData) {
     if (authData) {
-      //console.log(authData);
-      console.log('Logged in ' + authData.uid + ' ' + authData.google.email);
       document.getElementById("signedin").innerText = authData.google.displayName +
       ' <' + authData.google.email + '>';
       // Note: user data is not (yet) persisted to firebase
 
-      bindData(authData.uid);
-      setupPad(authData.uid);
+      bindUserData(authData.uid);
+      setupCollaboration(authData);
     } else {
       document.getElementById("signedin").innerText = "No";
       console.log("User is logged out");
     }
   });
-
 
   function bindEvents() {
     document.getElementById("signin").onclick = function() {
@@ -47,12 +44,11 @@
     };
 
     window.onhashchange = function() {
-      var uid = firebase.getAuth().uid;
-      setupPad(uid);
+      setupCollaboration(firebase.getAuth());
     };
   }
 
-  function bindData(uid) {
+  function bindUserData(uid) {
     firebase.child('users').child(uid).child('pads').on('value', function(snap) {
       var html = '';
       _.forOwn(snap.val(), function(val, key) {
@@ -64,12 +60,39 @@
 
   }
 
-  function setupPad(userId) {
-    var padId = window.location.hash.slice(1) || newPad(userId);
-    firebase.child('users').child(userId).child('pads').child(padId).set('1');
-    firepad = initFirepad(userId, padId);
+  function setupCollaboration(authData) {
+    var padId = window.location.hash.slice(1) || newPad(authData.uid);
+    if (window.location.hash.slice(1) !== padId) { window.location.hash = padId; }
 
-    initFirepad(userId, padId);
+    // Remember this pad for the user
+    firebase.child('users').child(authData.uid).child('pads').child(padId).set('1');
+
+    var headers = document.getElementById('headers');
+    headers.elements["from"].value = authData.google.displayName;
+    var padRef = firebase.child('pads').child(padId);
+    bindFormElement(padRef.child('to'), headers.elements['to']);
+    bindFormElement(padRef.child('subject'), headers.elements['subject']);
+
+    firepad = initFirepad(authData.uid, padRef);
+
+    var invitation = document.getElementById('invitation');
+    invitation.onsubmit = function(evt) {
+      var email = invitation.elements['email'].value;
+      if (!!email) {
+        padRef.child('invited').transaction(function(current) {
+          if (current == null) { current = []; }
+          if (current.indexOf(email) == -1) {
+            current.push(email);
+          }
+          return current;
+        });
+        invitation.elements['email'].value = '';
+
+        // TODO: send email
+      }
+      return false;
+    };
+    bindList(padRef.child('invited'), document.getElementById('invited'));
   }
 
   function newPad(userId) {
@@ -77,15 +100,12 @@
     return padRef.key();
   }
 
-  function initFirepad(userId, padId) {
-    if (!padId) { throw "No pad!"; }
-
+  function initFirepad(userId, padRef) {
     if (!!firepad) { firepad.dispose(); }
     var padEl = document.getElementById('firepad');
     padEl.innerHTML = '';
 
     var codeMirror = CodeMirror(padEl, {lineWrapping: true});
-    var padRef = firebase.child('pads').child(padId);
     var firepad = Firepad.fromCodeMirror(padRef, codeMirror, {
       userId: userId,
       richTextShortcuts: true,
@@ -95,8 +115,27 @@
 
     firepad.on('ready', function() { console.log("Firepad ready"); });
     firepad.on('synced', function() { console.log("Firepad synced"); });
-    window.location.hash = padId;
     return firepad;
+  }
+
+  function bindFormElement(padRef, formElt) {
+    padRef.on('value', function(snap) {
+      console.log("Received new value for " + padRef);
+      formElt.value = snap.val();
+    });
+    formElt.onchange = function(evt) {
+      padRef.set(evt.target.value);
+    };
+  }
+
+  function bindList(padRef, listElt) {
+    padRef.on('value', function(snap) {
+      var html = '';
+      _.each(snap.val(), function(v) {
+        html += '<li>' + v + '</li>';
+      });
+      listElt.innerHTML = html;
+    });
   }
 })();
 

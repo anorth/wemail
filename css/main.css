@@ -61,18 +61,41 @@ textarea {
   margin: 0 auto 0 auto;
 }
 
-#firepad {
-  height: 400px;
+#panels {
+  display: flex;
+}
+
+#leftpanel {
   border: 1px solid #cccccc;
+}
+
+#headers {
+
+}
+
+#firepad {
+  height: 300px;
+}
+
+#firepad.firepad {
+  /*height: 100%;*/
+}
+
+#rightpanel {
+  width: 240px;
+  background: #eee;
+}
+
+#invitation {
+  display: flex;
 }
 
 
 
 
-
-
-
-
+a.powered-by-firepad {
+  display: none;
+}
 
 
 
