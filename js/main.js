@@ -1,4 +1,6 @@
-(function () {
+function initFirebase() {
+  console.log('Initializing firebase.');
+
   var firebase = new Firebase("https://wemail.firebaseio.com/");
   var firepad;
   bindEvents();
@@ -34,7 +36,7 @@
           console.log("Authenticated successfully with payload:", authData);
         }
       }, {
-        scope: "email"
+        scope: "email https://www.googleapis.com/auth/gmail.compose"
       });
     };
 
@@ -137,5 +139,4 @@
       listElt.innerHTML = html;
     });
   }
-})();
-
+}
