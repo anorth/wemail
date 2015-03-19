@@ -1,10 +1,9 @@
-var GOOGLE_AUTH_DATA;  // TODO(adam): unglobalify this var
-
 function initFirebase() {
   console.log('Initializing firebase.');
 
   var firebase = new Firebase("https://wemail.firebaseio.com/");
   var firepad;
+  var googleAccessToken;
   bindEvents();
 
   firebase.onAuth(function(authData) {
@@ -16,7 +15,7 @@ function initFirebase() {
       bindUserData(authData.uid);
       setupCollaboration(authData);
 
-      GOOGLE_AUTH_DATA = authData.google;
+      googleAccessToken = authData.google.accessToken;
     } else {
       document.getElementById("signedin").innerText = "No";
       console.log("User is logged out");
@@ -89,6 +88,10 @@ function initFirebase() {
           if (current == null) { current = []; }
           if (current.indexOf(email) == -1) {
             current.push(email);
+
+            sendInvite(googleAccessToken, email, padId, function() {
+              console.log('Invite sent to ' + email + '.');
+            });
           }
           return current;
         });
