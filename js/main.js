@@ -3,7 +3,7 @@ function initFirebase() {
 
   var firebase = new Firebase("https://wemail.firebaseio.com/");
   var firepad;
-  var googleAccessToken;
+  var googleAuth;
   bindEvents();
 
   firebase.onAuth(function(authData) {
@@ -15,7 +15,7 @@ function initFirebase() {
       bindUserData(authData.uid);
       setupCollaboration(authData);
 
-      googleAccessToken = authData.google.accessToken;
+      googleAuth = authData.google;
     } else {
       document.getElementById("signedin").innerText = "No";
       console.log("User is logged out");
@@ -89,7 +89,7 @@ function initFirebase() {
           if (current.indexOf(email) == -1) {
             current.push(email);
 
-            sendInvite(googleAccessToken, email, padId, function() {
+            sendInvite(googleAuth, email, padId, function() {
               console.log('Invite sent to ' + email + '.');
             });
           }
