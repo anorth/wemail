@@ -69,14 +69,17 @@ function initFirebase() {
     // Remember this pad for the user
     firebase.child('users').child(authData.uid).child('pads').child(padId).set('1');
 
+    // Mail headers
     var headers = document.getElementById('headers');
     headers.elements["from"].value = authData.google.displayName;
     var padRef = firebase.child('pads').child(padId);
     bindFormElement(padRef.child('to'), headers.elements['to']);
     bindFormElement(padRef.child('subject'), headers.elements['subject']);
 
+    // Mail body
     firepad = initFirepad(authData, padRef);
 
+    // Collaborators
     var invitation = document.getElementById('invitation');
     invitation.onsubmit = function(evt) {
       var email = invitation.elements['email'].value;
@@ -100,6 +103,27 @@ function initFirebase() {
       return false;
     };
     bindList(padRef.child('invited'), document.getElementById('invited'));
+
+    // Chat
+    var chatContainer = document.getElementById('chat-container');
+    document.getElementById('chat-send').onclick = function() {
+      var input = document.getElementById('chat-input');
+      if (!!input.value) {
+        padRef.child('chat').push().set({
+          userId: authData.uid,
+          message: input.value,
+          timestamp: Date.now()
+        });
+        input.value = '';
+      }
+    };
+    bindList(padRef.child('chat'), document.getElementById('messages'), function(val) {
+      return '<div class="chat-author">' + val.userId + '</div>' +
+          '<div class="chat-message">' + val.message + '</div>';
+    });
+    padRef.child('chat').on('value', function() {
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    });
   }
 
   function newPad(userId) {

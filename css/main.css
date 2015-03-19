@@ -1,28 +1,33 @@
 /*! HTML5 Boilerplate v5.0 | MIT License | http://h5bp.com/ */
 
 html {
-    color: #222;
-    font-size: 1em;
-    line-height: 1.4;
+  color: #222;
+  font-size: 1em;
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
 }
 
 ::-moz-selection {
-    background: #b3d4fc;
-    text-shadow: none;
+  background: #b3d4fc;
+  text-shadow: none;
 }
 
 ::selection {
-    background: #b3d4fc;
-    text-shadow: none;
+  background: #b3d4fc;
+  text-shadow: none;
 }
 
 hr {
-    display: block;
-    height: 1px;
-    border: 0;
-    border-top: 1px solid #ccc;
-    margin: 1em 0;
-    padding: 0;
+  display: block;
+  height: 1px;
+  border: 0;
+  border-top: 1px solid #ccc;
+  margin: 1em 0;
+  padding: 0;
 }
 
 audio,
@@ -62,36 +67,106 @@ textarea {
 }
 
 #panels {
+  border: 1px solid #999999;
   display: flex;
+  height: 470px;
 }
+
+/***** Left panel *****/
 
 #leftpanel {
   border: 1px solid #cccccc;
 }
 
 #headers {
-
+ height: 70px;
 }
 
 #firepad {
-  height: 300px;
+  height: 400px;
 }
 
 #firepad.firepad {
   /*height: 100%;*/
 }
 
+/***** Right panel *****/
+
 #rightpanel {
   width: 240px;
+  display: flex;
+  flex-direction: column;
   background: #eee;
 }
 
+#collaborators-wrapper {
+  flex: 0 0 100px;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+#collaborators {
+  margin: 0 10px 0 0;
+  padding: 0 0 0 20px;
+  list-style: disc;
+}
+
+#invited {
+  margin: 0 10px 0 0;
+  padding: 0 0 0 20px;
+  list-style: circle;
+}
+
 #invitation {
+  flex: 0 0 30px;
   display: flex;
 }
 
+#chat-container {
+  width: 100%;
+  flex-grow: 1;
 
+  margin-top: 4px;
+  /*border-top: 1px dashed #222222;*/
+  overflow-y: scroll;
+  overflow-x: hidden;
+  background: white;
+}
 
+ul#messages {
+  width: 100%;
+  margin: 0;
+  padding: 0 0 0 0;
+  list-style: none;
+}
+
+ul#messages li {
+  width: 100%;
+  margin: 6px 0 0 0;
+  padding: 0 4px 0 4px;
+  background: #f8f8f8;
+}
+
+ul#messages .chat-author {
+  font-size: 10px;
+  color: #bbb;
+}
+
+ul#messages .chat-message {
+  font-size: 12px;
+  color: #222;
+}
+
+#chat-input {
+  flex: 0 0 60px;
+  margin-top: 1px;
+  border: 1px solid green;
+  font-size: 14px;
+}
+
+#chat-send {
+  flex: 0 0 26px;
+}
 
 a.powered-by-firepad {
   display: none;

@@ -35,9 +35,6 @@
         Signed in: <span id="signedin">No</span><br/>
         <a href="#" id="signin">Sign in</a> | <a href="#" id="signout">Sign out</a>
       </p>
-      <p>
-        Pads: <span id="otherpads"></span>
-      </p>
       <div id="panels">
         <div id="leftpanel">
           <form id="headers">
@@ -48,17 +45,27 @@
           <div id="firepad"></div>
         </div>
         <div id="rightpanel">
+          <div id="collaborators-wrapper">
+            <ul id="collaborators"></ul>
+            <ul id="invited"></ul>
+          </div>
           <form id="invitation">
             <input type="email" name="email" placeholder="colleague@company.com"/>
             <button name="invite" id="invite">Invite</button>
           </form>
-          <ul id="collaborators"></ul>
-          <ul id="invited"></ul>
-          <div id="chat">Chat... </div>
+          <div id="chat-container">
+            <ul id="messages"></ul>
+          </div>
+          <textarea id="chat-input" rows="3"></textarea>
+          <button id="chat-send">Send</button>
         </div>
       </div>
 
+      <p>
+        Pads: <span id="otherpads"></span>
+      </p>
     </div>
+
 
     <script src="js/lodash.min.js"></script>
     <script src="js/gapi.js"></script>
