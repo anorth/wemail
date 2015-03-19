@@ -1,6 +1,9 @@
-(function () {
+function initFirebase() {
+  console.log('Initializing firebase.');
+
   var firebase = new Firebase("https://wemail.firebaseio.com/");
   var firepad;
+  var googleAuth;
   bindEvents();
 
   firebase.onAuth(function(authData) {
@@ -11,6 +14,8 @@
 
       bindUserData(authData.uid);
       setupCollaboration(authData);
+
+      googleAuth = authData.google;
     } else {
       document.getElementById("signedin").innerText = "No";
       console.log("User is logged out");
@@ -34,7 +39,7 @@
           console.log("Authenticated successfully with payload:", authData);
         }
       }, {
-        scope: "email"
+        scope: "email https://www.googleapis.com/auth/gmail.compose"
       });
     };
 
@@ -83,6 +88,13 @@
           if (current == null) { current = []; }
           if (current.indexOf(email) == -1) {
             current.push(email);
+
+            sendInvite(googleAuth, email, padId, function(response) {
+              console.log('Invite sent to ' + email + '.');
+            }, function(reason) {
+              console.log('Invite failed to send to ' + email + ': ' +
+                reason.result.error.message);
+            });
           }
           return current;
         });
@@ -137,5 +149,4 @@
       listElt.innerHTML = html;
     });
   }
-})();
-
+}
