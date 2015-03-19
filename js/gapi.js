@@ -52,7 +52,7 @@ function sendEmail(googleAuth, toEmail, subject, body, onSuccess, onFailure) {
 function sendInvite(googleAuth, toEmail, padId, onSuccess, onFailure) {
   var body =
     'Hey - I need your help drafting an email.\n' +
-    'Can you please take a look at http://localhost:8000/#' + padId + ' ?\n' +
+    'Can you please take a look at https://wemail.firebaseapp.com/#' + padId + ' ?\n' +
     '\n' +
     'Thanks!';
 
