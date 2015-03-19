@@ -3,8 +3,7 @@ function initFirebase() {
 
   var firebase = new Firebase("https://wemail.firebaseio.com/");
   var firepad;
-  var googleAuth;
-  bindEvents();
+  bindUiEvents();
 
   firebase.onAuth(function(authData) {
     if (authData) {
@@ -14,15 +13,13 @@ function initFirebase() {
 
       bindUserData(authData.uid);
       setupCollaboration(authData);
-
-      googleAuth = authData.google;
     } else {
       document.getElementById("signedin").innerText = "No";
       console.log("User is logged out");
     }
   });
 
-  function bindEvents() {
+  function bindUiEvents() {
     document.getElementById("signin").onclick = function() {
       firebase.authWithOAuthPopup("google", function(error, authData) {
         if (error) {
@@ -78,7 +75,7 @@ function initFirebase() {
     bindFormElement(padRef.child('to'), headers.elements['to']);
     bindFormElement(padRef.child('subject'), headers.elements['subject']);
 
-    firepad = initFirepad(authData.uid, padRef);
+    firepad = initFirepad(authData, padRef);
 
     var invitation = document.getElementById('invitation');
     invitation.onsubmit = function(evt) {
@@ -87,20 +84,18 @@ function initFirebase() {
         padRef.child('invited').transaction(function(current) {
           if (current == null) { current = []; }
           if (current.indexOf(email) == -1) {
-            current.push(email);
-
-            sendInvite(googleAuth, email, padId, function(response) {
+            var invitedRef = current.push(email);
+            sendInvite(authData.google, email, padId, function(response) {
               console.log('Invite sent to ' + email + '.');
             }, function(reason) {
               console.log('Invite failed to send to ' + email + ': ' +
                 reason.result.error.message);
+              invitedRef.remove(); // Enable re-trying the failed send later.
             });
           }
           return current;
         });
         invitation.elements['email'].value = '';
-
-        // TODO: send email
       }
       return false;
     };
@@ -112,18 +107,32 @@ function initFirebase() {
     return padRef.key();
   }
 
-  function initFirepad(userId, padRef) {
+  function initFirepad(authData, padRef) {
     if (!!firepad) { firepad.dispose(); }
     var padEl = document.getElementById('firepad');
     padEl.innerHTML = '';
 
     var codeMirror = CodeMirror(padEl, {lineWrapping: true});
     var firepad = Firepad.fromCodeMirror(padRef, codeMirror, {
-      userId: userId,
+      userId: authData.uid,
       richTextShortcuts: true,
       richTextToolbar: true,
       defaultText: 'Hello, World!'
     });
+
+    bindList(padRef.child('users'), document.getElementById('collaborators'), function(obj, key) {
+      return obj.displayName || obj.email || key;
+    });
+
+    padRef.child('invited').transaction(function(current) {
+      if (current == null) current = [];
+      var myIndex = current.indexOf(authData.google.email);
+      if (myIndex >= 0) {
+        current.splice(myIndex, 1);
+      }
+      return current;
+    });
+    padRef.child('users').child(authData.uid).update({'displayName': authData.google.displayName});
 
     firepad.on('ready', function() { console.log("Firepad ready"); });
     firepad.on('synced', function() { console.log("Firepad synced"); });
@@ -140,13 +149,18 @@ function initFirebase() {
     };
   }
 
-  function bindList(padRef, listElt) {
+  function bindList(padRef, listElt, renderFn) {
+    if (!renderFn) { renderFn = identity; }
     padRef.on('value', function(snap) {
       var html = '';
-      _.each(snap.val(), function(v) {
-        html += '<li>' + v + '</li>';
+      _.each(snap.val(), function(value, key) {
+        html += '<li>' + renderFn(value, key) + '</li>';
       });
       listElt.innerHTML = html;
     });
+  }
+
+  function identity(x) {
+    return x;
   }
 }
