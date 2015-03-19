@@ -89,8 +89,11 @@ function initFirebase() {
           if (current.indexOf(email) == -1) {
             current.push(email);
 
-            sendInvite(googleAuth, email, padId, function() {
+            sendInvite(googleAuth, email, padId, function(response) {
               console.log('Invite sent to ' + email + '.');
+            }, function(reason) {
+              console.log('Invite failed to send to ' + email + ': ' +
+                reason.result.error.message);
             });
           }
           return current;
