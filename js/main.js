@@ -40,8 +40,7 @@ function initFirebase() {
           console.log("Authenticated successfully with payload:", authData);
         }
       }, {
-        //scope: "email https://www.googleapis.com/auth/gmail.compose"
-        scope: "email https://mail.google.com/"   // TODO(adam): reduce scope back to compose
+        scope: "email https://www.googleapis.com/auth/gmail.compose"
       });
     };
 
