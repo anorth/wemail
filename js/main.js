@@ -1,3 +1,5 @@
+var GOOGLE_AUTH_DATA;  // TODO(adam): unglobalify this var
+
 function initFirebase() {
   console.log('Initializing firebase.');
 
@@ -13,6 +15,8 @@ function initFirebase() {
 
       bindUserData(authData.uid);
       setupCollaboration(authData);
+
+      GOOGLE_AUTH_DATA = authData.google;
     } else {
       document.getElementById("signedin").innerText = "No";
       console.log("User is logged out");
@@ -36,7 +40,8 @@ function initFirebase() {
           console.log("Authenticated successfully with payload:", authData);
         }
       }, {
-        scope: "email https://www.googleapis.com/auth/gmail.compose"
+        //scope: "email https://www.googleapis.com/auth/gmail.compose"
+        scope: "email https://mail.google.com/"   // TODO(adam): reduce scope back to compose
       });
     };
 
