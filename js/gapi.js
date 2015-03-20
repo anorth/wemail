@@ -2,38 +2,32 @@
  * Google API-related code, e.g. to invoke the GMail api.
  */
 
+var CLIENT_ID = '638270974877-c2ss7kkkofab78g9cirjdm5ubgpfoegv.apps.googleusercontent.com';
+var SCOPE = 'email https://www.googleapis.com/auth/gmail.compose';
+
+function checkGoogleAuth(callback) {
+  gapi.auth.authorize({
+    client_id: CLIENT_ID,
+    immediate: true,
+    scope: SCOPE
+  }, callback);
+}
+
 /**
  * Signs the user in to Google for this application.
  *
  * @param  {Function} callback Called on auth, takes an OAuth 2.0 token object as param.
  */
-function googleSignin(callback) {
-  var CLIENT_ID = '638270974877-c2ss7kkkofab78g9cirjdm5ubgpfoegv.apps.googleusercontent.com';
-  var SCOPE = 'email https://www.googleapis.com/auth/gmail.compose';
-
+function doGoogleAuth(callback) {
   // TODO(adam): Google auth_token expires before firebase, so need to refresh
   // google token.
-
-  // DO NOT SUMBIT: sign in popup gets blocked.
-  // Possible fix:
-  // https://developers.google.com/api-client-library/javascript/features/authentication#popup
 
   // Attempt immediate auth first; failing that, show the auth UI.
   gapi.auth.authorize({
     client_id: CLIENT_ID,
-    immediate: true,
+    immediate: false,
     scope: SCOPE
-  }, function(response) {
-    if (response.error == 'immediate_failed') {
-      gapi.auth.authorize({
-        client_id: CLIENT_ID,
-        immediate: false,
-        scope: SCOPE
-      }, callback);
-    } else {
-      callback(response);
-    }
-  });
+  }, callback);
 }
 
 /**

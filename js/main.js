@@ -5,6 +5,8 @@
   /////
 
   function main() {
+    checkGoogleAuth();
+
     console.log('Initializing firebase.');
     var firebase = new Firebase("https://wemail.firebaseio.com/");
     var firepad;
@@ -145,11 +147,15 @@
 
   function attachUiEvents(firebase) {
     document.getElementById("signin").onclick = function() {
-      googleSignin(_.curry(onGoogleSignin)(firebase));
+      doGoogleAuth(_.curry(onGoogleSignin)(firebase));
     };
 
     document.getElementById("signout").onclick = function() {
       firebase.unauth();
+
+      // TODO(adam): revoke the oauth access token, per:
+      // http://stackoverflow.com/questions/12809339/how-to-revoke-an-authentication-token-client-side-against-the-google-api/19205371#19205371
+
       window.location.reload();
     };
 
