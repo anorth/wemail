@@ -14,6 +14,7 @@
     attachUiEvents(firebase);
 
     firebase.onAuth(function (authData) {
+      console.log("Firebase authentication:", authData);
       if (authData) {
         document.getElementById("signedin").innerText = authData.google.displayName +
         ' <' + authData.google.email + '>';
@@ -34,8 +35,9 @@
 
     window.onhashchange = function() {
       var padRef = openPad(firebase);
+      var authData = firebase.getAuth();
       padModel = createPadModel(padRef);
-      initCollaboration(firebase.getAuth(), userModel, padModel);
+      initCollaboration(authData, userModel, padModel);
       firepad = initFirepad(authData, padRef);
     };
 
@@ -129,25 +131,20 @@
   ///// UI
   /////
 
+  function onGoogleSignin(firebase, oauthToken) {
+    console.log('Signed in with Google:', oauthToken);
+    firebase.authWithOAuthToken("google", oauthToken.access_token, function(error, authData) {
+      if (error) {
+        console.log("Firebase login failed!", error);
+      } else {
+        console.log("Firebase login successful.");
+      }
+    });
+  }
+
   function attachUiEvents(firebase) {
     document.getElementById("signin").onclick = function() {
-      firebase.authWithOAuthPopup("google", function(error, authData) {
-        if (error) {
-          if (error.code === "TRANSPORT_UNAVAILABLE") {
-            // fall-back to browser redirects, and pick up the session
-            // automatically when we come back to the origin page
-            firebase.authWithOAuthRedirect("google", function(error) {
-              console.log("Login Failed!", error);
-            });
-          } else {
-            console.log("Login Failed!", error);
-          }
-        } else {
-          console.log("Authenticated successfully with payload:", authData);
-        }
-      }, {
-        scope: "email https://www.googleapis.com/auth/gmail.compose"
-      });
+      googleSignin(_.curry(onGoogleSignin)(firebase));
     };
 
     document.getElementById("signout").onclick = function() {
@@ -169,6 +166,7 @@
   }
 
   function initCollaboration(authData, userModel, padModel) {
+    if (!authData) { return; }
     if (window.location.hash.slice(1) !== padModel.id()) { window.location.hash = padModel.id(); }
 
     // Remember this pad for the user.
