@@ -34,8 +34,10 @@
 
     window.onhashchange = function() {
       var padRef = openPad(firebase);
+      var authData = firebase.getAuth();
+
       padModel = createPadModel(padRef);
-      initCollaboration(firebase.getAuth(), userModel, padModel);
+      initCollaboration(authData, userModel, padModel);
       firepad = initFirepad(authData, padRef);
     };
 
@@ -169,6 +171,7 @@
   }
 
   function initCollaboration(authData, userModel, padModel) {
+    if (!authData) { return; }
     if (window.location.hash.slice(1) !== padModel.id()) { window.location.hash = padModel.id(); }
 
     // Remember this pad for the user.
