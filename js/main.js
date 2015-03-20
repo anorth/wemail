@@ -36,6 +36,7 @@
     window.onhashchange = function() {
       var padRef = openPad(firebase);
       var authData = firebase.getAuth();
+
       padModel = createPadModel(padRef);
       initCollaboration(authData, userModel, padModel);
       firepad = initFirepad(authData, padRef);
