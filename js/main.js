@@ -5,6 +5,13 @@
   /////
 
   function main() {
+    checkGoogleAuth(function(response) {
+      console.log("Checked google auth:", response);
+
+      // TODO(adam): if auth exists, auth firebase as well.
+      // i.e. in this callback, call onGoogleSignin
+    });
+
     console.log('Initializing firebase.');
     var firebase = new Firebase("https://wemail.firebaseio.com/");
     var firepad;
@@ -14,6 +21,7 @@
     attachUiEvents(firebase);
 
     firebase.onAuth(function (authData) {
+      console.log("Firebase authentication:", authData);
       if (authData) {
         document.getElementById("signedin").innerText = authData.google.displayName +
         ' <' + authData.google.email + '>';
@@ -34,8 +42,10 @@
 
     window.onhashchange = function() {
       var padRef = openPad(firebase);
+      var authData = firebase.getAuth();
+
       padModel = createPadModel(padRef);
-      initCollaboration(firebase.getAuth(), userModel, padModel);
+      initCollaboration(authData, userModel, padModel);
       firepad = initFirepad(authData, padRef);
     };
 
@@ -129,29 +139,29 @@
   ///// UI
   /////
 
+  function onGoogleSignin(firebase, oauthToken) {
+    console.log('Signed in with Google:', oauthToken);
+    firebase.authWithOAuthToken("google", oauthToken.access_token, function(error, authData) {
+      if (error) {
+        console.log("Firebase login failed!", error);
+      } else {
+        console.log("Firebase login successful.");
+      }
+    });
+  }
+
   function attachUiEvents(firebase) {
     document.getElementById("signin").onclick = function() {
-      firebase.authWithOAuthPopup("google", function(error, authData) {
-        if (error) {
-          if (error.code === "TRANSPORT_UNAVAILABLE") {
-            // fall-back to browser redirects, and pick up the session
-            // automatically when we come back to the origin page
-            firebase.authWithOAuthRedirect("google", function(error) {
-              console.log("Login Failed!", error);
-            });
-          } else {
-            console.log("Login Failed!", error);
-          }
-        } else {
-          console.log("Authenticated successfully with payload:", authData);
-        }
-      }, {
-        scope: "email https://www.googleapis.com/auth/gmail.compose"
-      });
+      doGoogleAuth(_.curry(onGoogleSignin)(firebase));
     };
 
     document.getElementById("signout").onclick = function() {
       firebase.unauth();
+
+      // TODO(adam): revoke the oauth access token, per:
+      // http://stackoverflow.com/questions/12809339/how-to-revoke-an-authentication-token-client-side-against-the-google-api/19205371#19205371
+      // NO, DON'T DO THAT. That revokes the privilege, not signs out.
+
       window.location.reload();
     };
 
@@ -169,6 +179,7 @@
   }
 
   function initCollaboration(authData, userModel, padModel) {
+    if (!authData) { return; }
     if (window.location.hash.slice(1) !== padModel.id()) { window.location.hash = padModel.id(); }
 
     // Remember this pad for the user.
