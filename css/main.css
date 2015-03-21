@@ -61,6 +61,11 @@ textarea {
    Author's custom styles
    ========================================================================== */
 
+body {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 14px;
+}
+
 #container {
   width: 800px;
   margin: 0 auto 0 auto;
@@ -80,7 +85,25 @@ textarea {
 }
 
 #headers {
- height: 70px;
+  height: 90px;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 14px;
+}
+
+#headers label {
+  display: inline-block;
+  width: 70px;
+  text-align: right;
+}
+
+#headers input {
+  width: 400px;
+  height: 26px;
+  margin-top: 2px;
+}
+
+#headers input[readonly] {
+  border: 0;
 }
 
 #firepad {
@@ -89,6 +112,13 @@ textarea {
 
 #firepad.firepad {
   /*height: 100%;*/
+}
+
+#firepad .CodeMirror {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 16px;
+
 }
 
 a.powered-by-firepad {
