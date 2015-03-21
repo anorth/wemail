@@ -72,6 +72,7 @@ textarea {
   height: 470px;
 }
 
+
 /***** Left panel *****/
 
 #leftpanel {
@@ -89,6 +90,11 @@ textarea {
 #firepad.firepad {
   /*height: 100%;*/
 }
+
+a.powered-by-firepad {
+  display: none;
+}
+
 
 /***** Right panel *****/
 
@@ -168,15 +174,32 @@ ul#messages .chat-message {
   flex: 0 0 26px;
 }
 
+
+/***** Footer *****/
+
 #footer {
   margin-top: 20px;
   font-size: 14px;
 }
 
-a.powered-by-firepad {
-  display: none;
+#otherpads {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
+#otherpads li {
+  display: inline-block;
+}
+
+#otherpads li + li:before {
+  margin: 0 6px 0 6px;
+  content: "|";
+}
+
+/*ul#otherpads li:first-child:before {*/
+  /*content: none;*/
+/*}*/
 
 
 

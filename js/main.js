@@ -58,8 +58,16 @@
 
     function openPad(padId, authData) {
       authData = authData || firebase.getAuth();
-      var padModel = model.pad(padId);
-      initCollaboration(authData, userModel, padModel);
+      var padModel = model.pad(padId, authData.uid);
+
+      // Remember this pad for the user.
+      // Currently, this is the only way a pad ends up in a user's list; they have to visit it
+      // at least once, presumably via a linked emailed to them.
+      padModel.onSubjectChanged(function(subject) {
+        userModel.rememberPad(padModel.id, subject);
+      });
+
+      initCollaboration(authData, padModel);
       firepad = initFirepad(authData.uid, model.refForPad(padModel.id));
     }
 
@@ -108,12 +116,19 @@
         return createUserModel(usersRef.child(userId));
       },
 
-      pad: function(padId) {
-        return createPadModel(this.refForPad(padId));
+      pad: function(padId, userId) {
+        return createPadModel(this.refForPad(padId, userId));
       },
 
-      refForPad: function(padId) {
-        return (!!padId) ? padsRef.child(padId) : padsRef.push();
+      refForPad: function(padId, userId) {
+        if (!!padId) {
+          return padsRef.child(padId);
+        } else {
+          if (!userId) { throw "User id required for new pad"; }
+          var ref = padsRef.push();
+          ref.child('owner').set(userId);
+          return ref;
+        }
       },
 
       newPadRef: function() {
@@ -124,8 +139,8 @@
 
   function createUserModel(userRef) {
     return {
-      rememberPad: function(padId) {
-        userRef.child('pads').child(padId).set('1');
+      rememberPad: function(padId, subject) {
+        userRef.child('pads').child(padId).set({subject: subject || ""});
       },
 
       getPads: function(callback) {
@@ -221,24 +236,15 @@
   }
 
   function bindUserData(userModel) {
-    userModel.onPadListChanged(function(val) {
-      // TODO (alex): use an <ul> and bindList
-      var html = '';
-      _.forOwn(val, function(valueIgnored, padId) {
-        html += ' <a href="#' + padId + '">' + padId + '</a>';
-      });
-      document.getElementById('otherpads').innerHTML = html;
+    bindList(userModel.onPadListChanged, document.getElementById('otherpads'), function(val, key) {
+      var title = (!!val && !!val.subject && val.subject) || key;
+      return '<a href="#' + key + '">' + title + '</a>';
     });
   }
 
-  function initCollaboration(authData, userModel, padModel) {
+  function initCollaboration(authData, padModel) {
     if (!authData) { return; }
     if (window.location.hash.slice(1) !== padModel.id) { window.location.hash = padModel.id; }
-
-    // Remember this pad for the user.
-    // Currently, this is the only way a pad ends up in a user's list; they have to visit it
-    // at least once, presumably via a linked emailed to them.
-    userModel.rememberPad(padModel.id);
 
     // Mail headers
     var headers = document.getElementById('headers');
@@ -346,7 +352,7 @@
     if (!renderFn) { renderFn = identity; }
     listenFn(function(value) {
       var html = '';
-      _.each(value, function(val, key) {
+      _.forOwn(value, function(val, key) {
         html += '<li>' + renderFn(val, key) + '</li>';
       });
       listElt.innerHTML = html;
