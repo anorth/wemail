@@ -63,7 +63,36 @@
       firepad = initFirepad(authData.uid, model.refForPad(padModel.id));
     }
 
-    attachUiEvents(firebase);
+    attachUiEvents({
+      signIn: function() {
+        firebase.authWithOAuthPopup("google", function(error, authData) {
+          if (error) {
+            if (error.code === "TRANSPORT_UNAVAILABLE") {
+              // fall-back to browser redirects, and pick up the session
+              // automatically when we come back to the origin page
+              firebase.authWithOAuthRedirect("google", function(error) {
+                console.log("Login Failed!", error);
+              });
+            } else {
+              console.log("Login Failed!", error);
+            }
+          } else {
+            console.log("Authenticated successfully with payload:", authData);
+          }
+        }, {
+          scope: "email https://www.googleapis.com/auth/gmail.compose"
+        });
+      },
+
+      signOut: function() {
+        firebase.unauth();
+        window.location.reload();
+      },
+
+      newPad: function() {
+        openPad(null);
+      }
+    });
   }
 
   /////
@@ -172,31 +201,10 @@
   ///// UI
   /////
 
-  function attachUiEvents(firebase) {
-    document.getElementById("signin").onclick = function() {
-      firebase.authWithOAuthPopup("google", function(error, authData) {
-        if (error) {
-          if (error.code === "TRANSPORT_UNAVAILABLE") {
-            // fall-back to browser redirects, and pick up the session
-            // automatically when we come back to the origin page
-            firebase.authWithOAuthRedirect("google", function(error) {
-              console.log("Login Failed!", error);
-            });
-          } else {
-            console.log("Login Failed!", error);
-          }
-        } else {
-          console.log("Authenticated successfully with payload:", authData);
-        }
-      }, {
-        scope: "email https://www.googleapis.com/auth/gmail.compose"
-      });
-    };
-
-    document.getElementById("signout").onclick = function() {
-      firebase.unauth();
-      window.location.reload();
-    };
+  function attachUiEvents(handlers) {
+    document.getElementById("signin").onclick = handlers.signIn;
+    document.getElementById("signout").onclick = handlers.signOut;
+    document.getElementById("newpad").onclick = handlers.newPad;
   }
 
   function signedIn(authData) {

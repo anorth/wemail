@@ -168,6 +168,11 @@ ul#messages .chat-message {
   flex: 0 0 26px;
 }
 
+#footer {
+  margin-top: 20px;
+  font-size: 14px;
+}
+
 a.powered-by-firepad {
   display: none;
 }
