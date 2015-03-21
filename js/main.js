@@ -1,5 +1,9 @@
 (function() {
 
+  var MONTHS = ["January", "February", "March",
+      "April", "May", "June", "July", "August", "September",
+      "October", "November", "December"];
+
   /////
   ///// Main
   /////
@@ -9,11 +13,12 @@
     var firebase = new Firebase("https://wemail.firebaseio.com/");
     var model = createRootModel(firebase);
     var userModel;
+    var padModel;
     var firepad;
 
     firebase.onAuth(function (authData) {
       if (authData != null) {
-        console.log("Signed in");
+        console.log("Signed in " + authData.uid);
         signedIn(authData);
 
         userModel = model.user(authData.uid);
@@ -29,6 +34,7 @@
     });
 
     window.onhashchange = function() {
+      console.log("Hash changed " + window.location.hash);
       var authData = firebase.getAuth();
       selectPad(userModel, function(padId) {
         openPad(padId, authData);
@@ -49,7 +55,7 @@
         callback(padId);
       } else {
         userModel.getPads(function(pads) {
-          console.log('Pads', pads);
+          console.log('Users pads: ', pads);
           var lastPadId = (typeof pads === 'object') ? _.findLastKey(pads) : null;
           callback(lastPadId);
         });
@@ -58,7 +64,13 @@
 
     function openPad(padId, authData) {
       authData = authData || firebase.getAuth();
-      var padModel = model.pad(padId, authData.uid);
+
+      if (!!padModel && padModel.id === padId) { return; }
+      padModel = model.pad(padId, authData.uid);
+      window.location.hash = padModel.id;
+
+      initCollaboration(authData, padModel);
+      firepad = initFirepad(authData.uid, model.refForPad(padModel.id));
 
       // Remember this pad for the user.
       // Currently, this is the only way a pad ends up in a user's list; they have to visit it
@@ -67,8 +79,14 @@
         userModel.rememberPad(padModel.id, subject);
       });
 
-      initCollaboration(authData, padModel);
-      firepad = initFirepad(authData.uid, model.refForPad(padModel.id));
+      // Migration to ensure pads have owners: first viewer wins.
+      padModel.owner(function(owner) {
+        if (owner == null) { padModel.setOwner(authData.uid); }
+      });
+
+      padModel.onRemoved(function() {
+        window.location.hash = '';
+      });
     }
 
     attachUiEvents({
@@ -99,6 +117,27 @@
 
       newPad: function() {
         openPad(null);
+      },
+
+      deletePad: function() {
+        var authData = firebase.getAuth();
+        padModel.owner(function(owner) {
+          if (owner === authData.uid || owner == null) {
+            console.log("Retracting and deleting pad " + padModel.id);
+            padModel.collaborators(function(collaborators) {
+              _.forOwn(collaborators, function(val, id) {
+                model.user(id).forgetPad(padModel.id);
+              });
+              padModel.remove(); // Observer will see and refresh location.hash
+            });
+
+          } else {
+            console.log("Forgetting reference to non-owned pad " + padModel.id);
+            padModel.removeCollaborator(authData.uid);
+            userModel.forgetPad(padModel.id);
+            window.location.hash = '';
+          }
+        });
       }
     });
   }
@@ -125,8 +164,10 @@
           return padsRef.child(padId);
         } else {
           if (!userId) { throw "User id required for new pad"; }
+          var now = new Date();
+          var dateStr = now.getDate() + '-' + MONTHS[now.getMonth()] + "-" + now.getFullYear();
           var ref = padsRef.push();
-          ref.child('owner').set(userId);
+          ref.update({owner: userId, subject: "Draft email " + dateStr});
           return ref;
         }
       },
@@ -138,22 +179,25 @@
   }
 
   function createUserModel(userRef) {
+    var padsRef = userRef.child('pads');
+
     return {
       rememberPad: function(padId, subject) {
-        userRef.child('pads').child(padId).set({subject: subject || ""});
+        padsRef.child(padId).set({subject: subject || ""});
       },
 
       getPads: function(callback) {
-        userRef.child('pads').once('value', function(snapshot) {
+        padsRef.once('value', function(snapshot) {
           callback(snapshot.val());
         });
       },
 
+      forgetPad: function(padId) {
+        padsRef.child(padId).remove();
+      },
+
       onPadListChanged: function(callback) {
-        console.log('Pad list changed');
-        userRef.child('pads').on('value', function(snapshot) {
-          callback(snapshot.val());
-        });
+        fbutil.onChanged(padsRef, callback);
       }
     };
   }
@@ -161,6 +205,15 @@
   function createPadModel(padRef) {
     return {
       get id() { return padRef.key(); },
+
+      owner: function(callback) {
+        fbutil.once(padRef.child('owner'), callback);
+      },
+
+      setOwner: function(userId) {
+        // Usually not required, called if someone hits a non-existing pad id, e.g. thru URL hash
+        padRef.child('owner').set(userId);
+      },
 
       setToAddresses: function(addressString) {
         padRef.child('to').set(addressString);
@@ -182,8 +235,16 @@
         padRef.child('users').child(padRef.getAuth().uid).update({'displayName': displayName});
       },
 
+      collaborators: function(callback) {
+        fbutil.once(padRef.child('users'), callback);
+      },
+
       onCollaboratorsChanged: function(callback) {
         fbutil.onChanged(padRef.child('users'), callback);
+      },
+
+      removeCollaborator: function(userId) {
+        padRef.child('users').child(userId).remove();
       },
 
       addInvitedEmail: function(emailAddress, onsuccess) {
@@ -208,6 +269,17 @@
 
       onChatChanged: function(callback) {
         fbutil.onChanged(padRef.child('chat'), callback);
+      },
+
+      remove: function() {
+        padRef.remove();
+      },
+
+      onRemoved: function(callback) {
+        padRef.child('owner').on('value', function(snapshot) {
+          console.log("Owner: ", snapshot.val());
+          if (snapshot.val() == null) { callback(); }
+        })
       }
     };
   }
@@ -220,6 +292,7 @@
     document.getElementById("signin").onclick = handlers.signIn;
     document.getElementById("signout").onclick = handlers.signOut;
     document.getElementById("newpad").onclick = handlers.newPad;
+    document.getElementById("deletepad").onclick = handlers.deletePad;
   }
 
   function signedIn(authData) {
@@ -244,7 +317,6 @@
 
   function initCollaboration(authData, padModel) {
     if (!authData) { return; }
-    if (window.location.hash.slice(1) !== padModel.id) { window.location.hash = padModel.id; }
 
     // Mail headers
     var headers = document.getElementById('headers');

@@ -16,6 +16,19 @@
     },
 
     /**
+     * Invokes a callback with the value of a reference, just once. The callback receives
+     * the new state as a POJO.
+     *
+     * @param {Object} ref reference to fetch
+     * @param {Function} callback function to invoke
+     */
+    once: function(ref, callback) {
+      ref.once('value', function (snapshot) {
+        callback(snapshot.val())
+      });
+    },
+
+    /**
      * Appends a value to an array reference if it is not already present.
      *
      * @param {Object} ref firebase node to mutate
