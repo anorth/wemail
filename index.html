@@ -28,44 +28,57 @@
 
   </head>
   <body>
-
     <div id="container">
-      <h1>Let's email</h1>
-      <p>
-        Signed in: <span id="signedin">No</span><br/>
-        <a href="#" id="signin">Sign in</a> | <a href="#" id="signout">Sign out</a>
-      </p>
-      <div id="panels">
-        <div id="leftpanel">
-          <form id="headers">
-            <label for="label-to">To</label>: <input type="text" name="to" id="label-to"/><br/>
-            <label for="label-from">From</label>: <input type="text" name="from" id="label-from" readonly/><br/>
-            <label for="label-subj">Subject</label>: <input type="text" name="subject" id="label-subj"/><br/>
-          </form>
-          <div id="firepad"></div>
-        </div>
-        <div id="rightpanel">
-          <div id="collaborators-wrapper">
-            <ul id="collaborators"></ul>
-            <ul id="invited"></ul>
-          </div>
-          <form id="invitation">
-            <input type="email" name="email" placeholder="colleague@company.com"/>
-            <button name="invite" id="invite">Invite</button>
-          </form>
-          <div id="chat-container">
-            <ul id="messages"></ul>
-          </div>
-          <textarea id="chat-input" rows="3"></textarea>
-          <button id="chat-send">Send</button>
-        </div>
+      <div id="landing">
+        <h1>Wemail</h1>
+        <ol>
+          <li>Invite collaborators</li>
+          <li>Draft together, discuss in real time</li>
+          <li>Send from your Google Mail</li>
+        </ol>
+        <p>
+          <a href="#" id="signin">Sign in with Google account</a>
+        </p>
       </div>
 
-      <p>
-        Pads: <span id="otherpads"></span>
-      </p>
-    </div>
+      <div id="app" class="hidden">
+        <h1>Let's email</h1>
+        <p>
+          Signed in as <span id="signedin"></span> |
+          <a href="#" id="signout">Sign out</a>
+        </p>
+        <div id="panels">
+          <div id="leftpanel">
+            <form id="headers">
+              <label for="label-to">To</label>: <input type="text" name="to" id="label-to"/><br/>
+              <label for="label-from">From</label>: <input type="text" name="from" id="label-from" readonly/><br/>
+              <label for="label-subj">Subject</label>: <input type="text" name="subject" id="label-subj"/><br/>
+            </form>
+            <div id="firepad"></div>
+          </div>
+          <div id="rightpanel">
+            <div id="collaborators-wrapper">
+              <ul id="collaborators"></ul>
+              <ul id="invited"></ul>
+            </div>
+            <form id="invitation">
+              <input type="email" name="email" placeholder="colleague@company.com"/>
+              <button name="invite" id="invite">Invite</button>
+            </form>
+            <div id="chat-container">
+              <ul id="messages"></ul>
+            </div>
+            <textarea id="chat-input" rows="3"></textarea>
+            <button id="chat-send">Send</button>
+          </div>
+        </div>
 
+        <button id="newpad">New draft</button>
+        <p>
+          Drafts: <span id="otherpads"></span>
+        </p>
+      </div>
+    </div>
 
     <script src="js/lodash.min.js"></script>
     <script src="js/gapi.js"></script>

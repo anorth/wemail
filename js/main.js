@@ -7,56 +7,91 @@
   function main() {
     console.log('Initializing firebase.');
     var firebase = new Firebase("https://wemail.firebaseio.com/");
-    var firepad;
+    var model = createRootModel(firebase);
     var userModel;
-    var padModel;
-
-    attachUiEvents(firebase);
+    var firepad;
 
     firebase.onAuth(function (authData) {
-      if (authData) {
-        document.getElementById("signedin").innerText = authData.google.displayName +
-        ' <' + authData.google.email + '>';
-        // Note: user data is not (yet) persisted to firebase
+      if (authData != null) {
+        console.log("Signed in");
+        signedIn(authData);
 
-        userModel = createUserModel(firebase.child('users').child(authData.uid));
+        userModel = model.user(authData.uid);
         bindUserData(userModel);
 
-        var padRef = openPad(firebase);
-        padModel = createPadModel(padRef);
-        initCollaboration(authData, userModel, padModel);
-        firepad = initFirepad(authData, padRef);
+        selectPad(userModel, function(padId) {
+          openPad(padId, authData);
+        });
       } else {
-        document.getElementById("signedin").innerText = "No";
-        console.log("User is logged out");
+        console.log("Signed out");
+        signedOut();
       }
     });
 
     window.onhashchange = function() {
-      var padRef = openPad(firebase);
       var authData = firebase.getAuth();
-
-      padModel = createPadModel(padRef);
-      initCollaboration(authData, userModel, padModel);
-      firepad = initFirepad(authData, padRef);
+      selectPad(userModel, function(padId) {
+        openPad(padId, authData);
+      });
     };
 
     /**
-     * Returns firebase reference to the pad indicated by the current location, else a new pad.
+     * Provides the id of the pad indicated by the current location, or the user's most recent pad,
+     * else null.
+     *
+     * @param {Object} userModel
+     * @param {Function} callback receives id of pad, or null
+     *
      */
-    function openPad(firebase) {
+    function selectPad(userModel, callback) {
       var padId = window.location.hash.slice(1);
-      if (!!padId) {
-        return firebase.child('pads').child(padId);
+      if (padId) {
+        callback(padId);
       } else {
-        return firebase.child('pads').push();
+        userModel.getPads(function(pads) {
+          console.log('Pads', pads);
+          var lastPadId = (typeof pads === 'object') ? _.findLastKey(pads) : null;
+          callback(lastPadId);
+        });
       }
     }
+
+    function openPad(padId, authData) {
+      authData = authData || firebase.getAuth();
+      var padModel = model.pad(padId);
+      initCollaboration(authData, userModel, padModel);
+      firepad = initFirepad(authData.uid, model.refForPad(padModel.id));
+    }
+
+    attachUiEvents(firebase);
   }
 
   /////
   ///// Models
   /////
+
+  function createRootModel(firebase) {
+    var usersRef = firebase.child('users');
+    var padsRef = firebase.child('pads');
+
+    return {
+      user: function(userId) {
+        return createUserModel(usersRef.child(userId));
+      },
+
+      pad: function(padId) {
+        return createPadModel(this.refForPad(padId));
+      },
+
+      refForPad: function(padId) {
+        return (!!padId) ? padsRef.child(padId) : padsRef.push();
+      },
+
+      newPadRef: function() {
+        return padsRef.push();
+      }
+    };
+  }
 
   function createUserModel(userRef) {
     return {
@@ -64,7 +99,14 @@
         userRef.child('pads').child(padId).set('1');
       },
 
+      getPads: function(callback) {
+        userRef.child('pads').once('value', function(snapshot) {
+          callback(snapshot.val());
+        });
+      },
+
       onPadListChanged: function(callback) {
+        console.log('Pad list changed');
         userRef.child('pads').on('value', function(snapshot) {
           callback(snapshot.val());
         });
@@ -74,8 +116,7 @@
 
   function createPadModel(padRef) {
     return {
-      id: function() { return padRef.key(); },
-      ref: function() { return padRef; }, // TODO: remove this accessor
+      get id() { return padRef.key(); },
 
       setToAddresses: function(addressString) {
         padRef.child('to').set(addressString);
@@ -156,7 +197,19 @@
       firebase.unauth();
       window.location.reload();
     };
+  }
 
+  function signedIn(authData) {
+    document.getElementById("signedin").innerText = authData.google.displayName +
+    ' <' + authData.google.email + '>';
+    document.getElementById('landing').className = 'hidden';
+    document.getElementById('app').className = '';
+  }
+
+  function signedOut() {
+    document.getElementById("signedin").innerText = '';
+    document.getElementById('landing').className = '';
+    document.getElementById('app').className = 'hidden';
   }
 
   function bindUserData(userModel) {
@@ -172,12 +225,12 @@
 
   function initCollaboration(authData, userModel, padModel) {
     if (!authData) { return; }
-    if (window.location.hash.slice(1) !== padModel.id()) { window.location.hash = padModel.id(); }
+    if (window.location.hash.slice(1) !== padModel.id) { window.location.hash = padModel.id; }
 
     // Remember this pad for the user.
     // Currently, this is the only way a pad ends up in a user's list; they have to visit it
     // at least once, presumably via a linked emailed to them.
-    userModel.rememberPad(padModel.id());
+    userModel.rememberPad(padModel.id);
 
     // Mail headers
     var headers = document.getElementById('headers');
@@ -192,7 +245,7 @@
       var email = invitation.elements['email'].value;
       if (!!email) {
         padModel.addInvitedEmail(email, function() {
-          sendInvite(authData.google, email, padModel.id(), function(response) {
+          sendInvite(authData.google, email, padModel.id, function(response) {
             console.log('Invitation sent to ' + email + '.');
           }, function(reason) {
             console.log('Invitation failed to send to ' + email + ': ' + reason.result.error.message);
@@ -234,14 +287,14 @@
     });
   }
 
-  function initFirepad(authData, padRef) {
+  function initFirepad(userId, padRef) {
     if (!!firepad) { firepad.dispose(); }
     var padEl = document.getElementById('firepad');
     padEl.innerHTML = '';
 
     var codeMirror = CodeMirror(padEl, {lineWrapping: true});
     var firepad = Firepad.fromCodeMirror(padRef, codeMirror, {
-      userId: authData.uid,
+      userId: userId,
       richTextShortcuts: true,
       richTextToolbar: true,
       defaultText: 'Hello, World!'
