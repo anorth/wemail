@@ -343,11 +343,15 @@
       return false;
     };
 
-    bindList(padModel.onInvitedChanged, document.getElementById('invited'));
+    bindList(padModel.onInvitedChanged, document.getElementById('invited'), function(value, key) {
+      return '○ ' + value;
+    });
 
     bindList(padModel.onCollaboratorsChanged, document.getElementById('collaborators'),
         function (obj, key) {
-          return obj.displayName || obj.email || key;
+          var label = obj.displayName || obj.email || key;
+          var color = obj.color || '#666';
+          return '<span style="color: ' + color + ';">● </span>' + label;
         });
 
     //padModel.arrayRemove('invited', authData.google.email);
@@ -379,11 +383,12 @@
     padEl.innerHTML = '';
 
     var codeMirror = CodeMirror(padEl, {lineWrapping: true});
+    // TODO(alex): add userColor opt so we can choose better colors
     var firepad = Firepad.fromCodeMirror(padRef, codeMirror, {
       userId: userId,
       richTextShortcuts: true,
       richTextToolbar: true,
-      defaultText: 'Hello, World!'
+      defaultText: ''
     });
 
     firepad.on('ready', function() { console.log("Firepad ready"); });

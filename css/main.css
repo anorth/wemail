@@ -113,14 +113,15 @@ a.powered-by-firepad {
 
 #collaborators {
   margin: 0 10px 0 0;
-  padding: 0 0 0 20px;
-  list-style: disc;
+  padding: 0 0 0 4px;
+  list-style: none;
 }
 
 #invited {
   margin: 0 10px 0 0;
-  padding: 0 0 0 20px;
-  list-style: circle;
+  padding: 0 0 0 4px;
+  list-style: none;
+  color: #888;
 }
 
 #invitation {
