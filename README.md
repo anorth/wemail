@@ -1,3 +1,5 @@
+TODO(adam): push firebase app down a dir, so chromeext and firebase co-exist.
+
 # weMail
 
 Draft emails together.

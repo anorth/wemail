@@ -1,0 +1,45 @@
+/* Technique to detect new draft emails per:
+ * http://developer.streak.com/2012/11/how-to-detect-dom-changes-in-css.html
+ */
+
+/* Set up the keyframes for animation. */
+@keyframes nodeInserted {
+  from { opacity: 0.99; }
+  to { opacity: 1; }
+}
+
+@-moz-keyframes nodeInserted {
+  from { opacity: 0.99; }
+  to { opacity: 1; }
+}
+
+@-webkit-keyframes nodeInserted {
+  from { opacity: 0.99; }
+  to { opacity: 1; }
+}
+
+@-ms-keyframes nodeInserted {
+  from { opacity: 0.99; }
+  to { opacity: 1; }
+}
+
+@-o-keyframes nodeInserted {
+  from { opacity: 0.99; }
+  to { opacity: 1; }
+}
+
+/* NOTE(adam): depending on fragile CSS selectors, however the class
+ * id has been stable for at least 2 years per googling. */
+.n1tfz /* tr containing gmail compose action buttons */ {
+  animation-duration: 0.001s;
+  -o-animation-duration: 0.001s;
+  -ms-animation-duration: 0.001s;
+  -moz-animation-duration: 0.001s;
+  -webkit-animation-duration: 0.001s;
+
+  animation-name: nodeInserted;
+  -o-animation-name: nodeInserted;
+  -ms-animation-name: nodeInserted;
+  -moz-animation-name: nodeInserted;
+  -webkit-animation-name: nodeInserted;
+}

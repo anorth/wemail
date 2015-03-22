@@ -1,0 +1,19 @@
+{
+  "manifest_version": 2,
+  "name": "WeMail",
+  "description": "Draft emails with people from within Gmail.",
+  "version": "0.1",
+
+  "permissions": [ "activeTab" ],
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://mail.google.com/*",
+        "http://mail.google.com/*"
+      ],
+      "css": ["content.css"],
+      "js": ["jquery-2.1.3.min.js", "content.js"]
+    }
+  ]
+}
