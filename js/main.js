@@ -41,6 +41,17 @@
       });
     };
 
+    window.addEventListener('message', function(event) {
+      // TODO(adam): enforce origin of message, to avoid evil extensions sending messages here.
+      console.log('Message received from extension:', event.data, event);
+      var data = event.data;
+
+      if (data.draftId) {
+        console.log('Initializing draft for draftId:', data.draftId);
+        // TODO: call the gmail api to load the draft body + metadata into the page.
+      }
+    });
+
     /**
      * Provides the id of the pad indicated by the current location, or the user's most recent pad,
      * else null.
