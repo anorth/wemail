@@ -10,8 +10,9 @@ $('body').bind('animationstart MSAnimationStart webkitAnimationStart', function(
 
     var toolbar = $(event.target);
 
-    var draftContainer = toolbar.children().first().clone();
-    var draftButton = draftContainer.find('div[role=button]');
+    var draftContainer = toolbar.children().first();
+    var sendButton = draftContainer.find('div[role=button]').first();
+    var draftButton = sendButton.clone();
     draftButton
       .text('Share Draft')
       .attr('data-tooltip', 'Share Draft')
@@ -22,6 +23,6 @@ $('body').bind('animationstart MSAnimationStart webkitAnimationStart', function(
       console.log('Share draft not yet implemented.')
     });
 
-    draftContainer.prependTo(toolbar);
+    draftButton.insertBefore(sendButton);
   }
 });
