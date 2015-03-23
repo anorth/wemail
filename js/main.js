@@ -75,7 +75,7 @@
       // Remember this pad for the user.
       // Currently, this is the only way a pad ends up in a user's list; they have to visit it
       // at least once, presumably via a linked emailed to them.
-      padModel.onSubjectChanged(function(subject) {
+      padModel.onHeaderChanged('subject', function(subject) {
         userModel.rememberPad(padModel.id, subject);
       });
 
@@ -203,6 +203,10 @@
   }
 
   function createPadModel(padRef) {
+    var usersRef = padRef.child('users');
+    var invitedRef = padRef.child('invited');
+    var headersRef = padRef.child('headers');
+
     return {
       get id() { return padRef.key(); },
 
@@ -215,48 +219,40 @@
         padRef.child('owner').set(userId);
       },
 
-      setToAddresses: function(addressString) {
-        padRef.child('to').set(addressString);
+      setHeader: function(headerName, value) {
+        headersRef.child(headerName.toLowerCase()).set(value);
       },
 
-      onToAddressesChanged: function(callback) {
-        fbutil.onChanged(padRef.child('to'), callback);
-      },
-
-      setSubject: function(subject) {
-        padRef.child('subject').set(subject);
-      },
-
-      onSubjectChanged: function(callback) {
-        fbutil.onChanged(padRef.child('subject'), callback);
+      onHeaderChanged: function(headerName, callback) {
+        fbutil.onChanged(headersRef.child(headerName.toLowerCase()), callback);
       },
 
       setMyDisplayName: function(displayName) {
-        padRef.child('users').child(padRef.getAuth().uid).update({'displayName': displayName});
+        usersRef.child(padRef.getAuth().uid).update({'displayName': displayName});
       },
 
       collaborators: function(callback) {
-        fbutil.once(padRef.child('users'), callback);
+        fbutil.once(usersRef, callback);
       },
 
       onCollaboratorsChanged: function(callback) {
-        fbutil.onChanged(padRef.child('users'), callback);
+        fbutil.onChanged(usersRef, callback);
       },
 
       removeCollaborator: function(userId) {
-        padRef.child('users').child(userId).remove();
+        usersRef.child(userId).remove();
       },
 
       addInvitedEmail: function(emailAddress, onsuccess) {
-        fbutil.arraySetAdd(padRef.child('invited'), emailAddress, onsuccess);
+        fbutil.arraySetAdd(invitedRef, emailAddress, onsuccess);
       },
 
       removeInvitedEmail: function(emailAddress) {
-        fbutil.arraySetRemove(padRef.child('invited'), emailAddress);
+        fbutil.arraySetRemove(invitedRef, emailAddress);
       },
 
       onInvitedChanged: function(callback) {
-        fbutil.onChanged(padRef.child('invited'), callback);
+        fbutil.onChanged(invitedRef, callback);
       },
 
       sendChat: function(userId, message) {
@@ -320,10 +316,8 @@
 
     // Mail headers
     var headers = document.getElementById('headers');
-    headers.elements["from"].value = authData.google.displayName;
-
-    bindFormField(padModel.setToAddresses, padModel.onToAddressesChanged, headers.elements['to']);
-    bindFormField(padModel.setSubject, padModel.onSubjectChanged, headers.elements['subject']);
+    bindHeaderField(padModel, 'to', headers.elements['to']);
+    bindHeaderField(padModel, 'subject', headers.elements['subject']);
 
     // Collaborators
     var invitation = document.getElementById('invitation');
@@ -394,6 +388,12 @@
     firepad.on('ready', function() { console.log("Firepad ready"); });
     firepad.on('synced', function() { console.log("Firepad synced"); });
     return firepad;
+  }
+
+  function bindHeaderField(padModel, name, elt) {
+    bindFormField(function(value) {padModel.setHeader(name, value); },
+        function(callback) {padModel.onHeaderChanged(name, callback); },
+        elt);
   }
 
   /**

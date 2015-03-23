@@ -51,7 +51,6 @@
           <div id="leftpanel">
             <form id="headers">
               <label for="label-to">To</label>: <input type="text" name="to" id="label-to"/><br/>
-              <label for="label-from">From</label>: <input type="text" name="from" id="label-from" readonly/><br/>
               <label for="label-subj">Subject</label>: <input type="text" name="subject" id="label-subj"/><br/>
             </form>
             <div id="firepad"></div>
@@ -74,10 +73,14 @@
         </div>
 
         <div id="footer">
-          <button id="newpad">New draft</button>
-          <button id="deletepad">Delete this draft</button>
-          <p>
-            <strong>Drafts:</strong>
+          <div class="buttons">
+            <button id="newpad">New draft</button>
+            <button id="deletepad">Delete this draft</button>
+            <button id="send">Send from my GMail</button>
+          </div>
+
+          <p class="draftlist">
+            <strong>My drafts:</strong>
             <ul id="otherpads"></ul>
           </p>
         </div>
