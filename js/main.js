@@ -43,12 +43,34 @@
 
     window.addEventListener('message', function(event) {
       // TODO(adam): enforce origin of message, to avoid evil extensions sending messages here.
-      console.log('Message received from extension:', event.data, event);
+      //console.log('Message received from extension:', event.data, event);
       var data = event.data;
 
       if (data.draftId) {
         console.log('Initializing draft for draftId:', data.draftId);
-        // TODO: call the gmail api to load the draft body + metadata into the page.
+        var googleAuth = firebase.getAuth().google;
+
+        gmail.getDraft(googleAuth.accessToken, data.draftId, function(message) {
+          // https://developers.google.com/gmail/api/v1/reference/users/messages#resource
+          var padModel = openPad(null);  // @alex, is this necessary?
+
+          _.each(message.payload.headers, function(header) {
+            //console.log('got header: "' + header.name + '" value: "' + header.value + '"');
+            switch (header.name) {
+              case 'Subject':
+              case 'To':
+              case 'Cc':
+              case 'Bcc': {
+                padModel.setHeader(header.name.toLowerCase(), header.value);
+              }
+              // TODO(adam): do other fields, e.g. gmail fields In-Reply-To, Message-ID
+            }
+          });
+
+          // TODO: load the draft body.
+        }, function(response) {
+          // failure
+        });
       }
     });
 
@@ -98,6 +120,8 @@
       padModel.onRemoved(function() {
         window.location.hash = '';
       });
+
+      return padModel;
     }
 
     attachUiEvents({
@@ -117,7 +141,8 @@
             console.log("Authenticated successfully with payload:", authData);
           }
         }, {
-          scope: "email https://www.googleapis.com/auth/gmail.compose"
+          // readonly for users.messages.get, for retrieving draft details reliably.
+          scope: "email https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.readonly"
         });
       },
 

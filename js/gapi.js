@@ -70,6 +70,32 @@
       _.forEach(ccRecipients, function(r) {headerLines.push('cc: ' + r)});
       _.forEach(bccRecipients, function(r) {headerLines.push('bcc: ' + r)});
       return sendEmailRequest(googleAuth.accessToken, headerLines, bodyHtml, onSuccess, onFailure);
+    },
+
+    /**
+     * Gets the specified draft from the Google REST API.
+     *
+     * @param {String} accessToken
+     * @param {String} draftId Id of the draft to retrieve, as a hex string.
+     * @param {Function} onSuccess Function to call on success, with response of format per
+     *     https://developers.google.com/gmail/api/v1/reference/users/drafts#resource
+     * @param {Function} onFailure Function to call on failure, with reason.
+     */
+    getDraft: function(accessToken, draftId, onSuccess, onFailure) {
+      console.log("GAPI retrieving draft message for id:", draftId);
+
+      // NOTE(adam): users.drafts.get is flakey, so using users.messages.get instead.
+      return gapi.client.request({
+        path: 'https://www.googleapis.com/gmail/v1/users/me/messages/' + draftId,
+        method: 'GET',
+        params: { 'access_token': accessToken }
+      }).then(function(response) {
+        console.log('Gmail drafts.get received: ', response.result);
+        onSuccess(response.result);
+      }, function(reason) {
+        console.error("Gmail drafts.get failed", reason.result.error.message);
+        onFailure(reason);
+      });
     }
   };
 
@@ -96,9 +122,7 @@
     return gapi.client.request({
       path: 'https://content.googleapis.com/gmail/v1/users/me/messages/send',
       method: 'POST',
-      params: {
-        access_token: accessToken
-      },
+      params: { 'access_token': accessToken },
       body: {
         'raw': base64.encode(headerLines.join('\n') + '\n\n' + body)
       }
