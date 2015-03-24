@@ -24,7 +24,8 @@
       "run_at": "document_start",  // to set up message handler early
       "matches": [
         "http://localhost:8000/*",
-        "http://wemail.firebaseapp.com/*"
+        "http://wemail.firebaseapp.com/*",
+        "https://wemail.firebaseapp.com/*"
       ],
       "js": ["content_wemail.js"]
     }
