@@ -78,7 +78,7 @@
      * @param {String} accessToken
      * @param {String} draftId Id of the draft to retrieve, as a hex string.
      * @param {Function} onSuccess Function to call on success, with response of format per
-     *     https://developers.google.com/gmail/api/v1/reference/users/drafts#resource
+     *     https://developers.google.com/gmail/api/v1/reference/users/messages#resource
      * @param {Function} onFailure Function to call on failure, with reason.
      */
     getDraft: function(accessToken, draftId, onSuccess, onFailure) {
@@ -90,10 +90,10 @@
         method: 'GET',
         params: { 'access_token': accessToken }
       }).then(function(response) {
-        console.log('Gmail drafts.get received: ', response.result);
+        console.log('Gmail messages.get received: ', response.result);
         onSuccess(response.result);
       }, function(reason) {
-        console.error("Gmail drafts.get failed", reason.result.error.message);
+        console.error("Gmail messages.get failed", reason.result.error.message);
         onFailure(reason);
       });
     }
