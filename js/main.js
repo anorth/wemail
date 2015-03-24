@@ -138,6 +138,31 @@
             window.location.hash = '';
           }
         });
+      },
+
+      sendEmail: function() {
+        var body = firepad.getHtml();
+
+        // TODO(alex): Replace nested callbacks with a promise chain
+        padModel.headers(function (headers) {
+          padModel.collaborators(function (collaborators) {
+            // TODO(alex): Validate addressees, content
+            // TODO(alex): BCC collaborators
+            var toRecipients = headers['to'].split(/,;/);
+            gmail.sendHtmlEmail(firebase.getAuth().google,
+                toRecipients,
+                [],
+                [],
+                headers['subject'],
+                body,
+                function (success) {
+                  console.log("Mail was sent!", success);
+                  // TODO(alex): Delete draft here and in GMail
+                }, function (reason) {
+                  console.log("Failed to send :-(", reason);
+                });
+          });
+        });
       }
     });
   }
@@ -219,6 +244,10 @@
         padRef.child('owner').set(userId);
       },
 
+      headers: function(callback) {
+        fbutil.once(headersRef, callback);
+      },
+
       setHeader: function(headerName, value) {
         headersRef.child(headerName.toLowerCase()).set(value);
       },
@@ -289,6 +318,7 @@
     document.getElementById("signout").onclick = handlers.signOut;
     document.getElementById("newpad").onclick = handlers.newPad;
     document.getElementById("deletepad").onclick = handlers.deletePad;
+    document.getElementById("send").onclick = handlers.sendEmail;
   }
 
   function signedIn(authData) {
@@ -325,7 +355,7 @@
       var email = invitation.elements['email'].value;
       if (!!email) {
         padModel.addInvitedEmail(email, function() {
-          sendInvite(authData.google, email, padModel.id, function(response) {
+          gmail.sendInvite(authData.google, email, padModel.id, function(response) {
             console.log('Invitation sent to ' + email + '.');
           }, function(reason) {
             console.log('Invitation failed to send to ' + email + ': ' + reason.result.error.message);
@@ -348,7 +378,6 @@
           return '<span style="color: ' + color + ';">● </span>' + label;
         });
 
-    //padModel.arrayRemove('invited', authData.google.email);
     padModel.removeInvitedEmail(authData.google.email);
     padModel.setMyDisplayName(authData.google.displayName);
 
