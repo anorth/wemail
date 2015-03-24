@@ -142,24 +142,32 @@
 
       sendEmail: function() {
         var body = firepad.getHtml();
+        var googleAuth = firebase.getAuth().google;
 
         // TODO(alex): Replace nested callbacks with a promise chain
         padModel.headers(function (headers) {
           padModel.collaborators(function (collaborators) {
             // TODO(alex): Validate addressees, content
             // TODO(alex): BCC collaborators
-            var toRecipients = headers['to'].split(/,;/);
-            gmail.sendHtmlEmail(firebase.getAuth().google,
+            var toRecipients = splitEmailAddresses(headers['to']);
+            var ccRecipients = splitEmailAddresses(headers['cc']);
+            var bccRecipients = splitEmailAddresses(headers['bcc']);
+            _.forEach(collaborators, function(collaborator) {
+              if (!!collaborator.email && collaborator.email !== googleAuth.email) {
+                bccRecipients.push(collaborator.email);
+              }
+            });
+            gmail.sendHtmlEmail(googleAuth,
                 toRecipients,
-                [],
-                [],
+                ccRecipients,
+                bccRecipients,
                 headers['subject'],
                 body,
                 function (success) {
-                  console.log("Mail was sent!", success);
+                  console.log("Mail was sent!");
                   // TODO(alex): Delete draft here and in GMail
                 }, function (reason) {
-                  console.log("Failed to send :-(", reason);
+                  console.log("Failed to send :-(");
                 });
           });
         });
@@ -256,8 +264,8 @@
         fbutil.onChanged(headersRef.child(headerName.toLowerCase()), callback);
       },
 
-      setMyDisplayName: function(displayName) {
-        usersRef.child(padRef.getAuth().uid).update({'displayName': displayName});
+      setMyCollaboratorProfile: function(email, displayName) {
+        usersRef.child(padRef.getAuth().uid).update({email: email, displayName: displayName});
       },
 
       collaborators: function(callback) {
@@ -347,6 +355,8 @@
     // Mail headers
     var headers = document.getElementById('headers');
     bindHeaderField(padModel, 'to', headers.elements['to']);
+    bindHeaderField(padModel, 'cc', headers.elements['cc']);
+    bindHeaderField(padModel, 'bcc', headers.elements['bcc']);
     bindHeaderField(padModel, 'subject', headers.elements['subject']);
 
     // Collaborators
@@ -378,8 +388,8 @@
           return '<span style="color: ' + color + ';">● </span>' + label;
         });
 
+    padModel.setMyCollaboratorProfile(authData.google.email, authData.google.displayName);
     padModel.removeInvitedEmail(authData.google.email);
-    padModel.setMyDisplayName(authData.google.displayName);
 
     // Chat
     var chatContainer = document.getElementById('chat-container');
@@ -455,7 +465,7 @@
    * @param {Function} renderFn
    */
   function bindList(listenFn, listElt, renderFn) {
-    if (!renderFn) { renderFn = identity; }
+    if (!renderFn) { renderFn = _.identity; }
     listenFn(function(value) {
       var html = '';
       _.forOwn(value, function(val, key) {
@@ -465,8 +475,11 @@
     });
   }
 
-  function identity(x) {
-    return x;
+  function splitEmailAddresses(addresseeLine) {
+    if (!!addresseeLine) {
+      return _.filter(addresseeLine.split(/[,;] */), _.identity);
+    }
+    return [];
   }
 
   window.main = main;
