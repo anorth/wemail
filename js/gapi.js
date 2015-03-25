@@ -124,7 +124,7 @@
       method: 'POST',
       params: { 'access_token': accessToken },
       body: {
-        'raw': base64.encode(headerLines.join('\n') + '\n\n' + body)
+        'raw': utf8ToB64(headerLines.join('\n') + '\n\n' + body)
       }
     }).then(onSuccess, function(reason) {
       console.error("GMail send failed", reason.result.error.message);
@@ -138,11 +138,11 @@
 
   // See https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#The_.22Unicode_Problem.22
   function utf8ToB64( str ) {
-    return window.btoa(unescape(encodeURIComponent( str )));
+    return base64.encode(unescape(encodeURIComponent( str )));
   }
 
   function b64ToUtf8( str ) {
-    return decodeURIComponent(escape(window.atob( str )));
+    return decodeURIComponent(escape(base64.decode( str )));
   }
 
 })();
