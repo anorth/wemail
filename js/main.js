@@ -24,22 +24,14 @@
         userModel = model.user(authData.uid);
         bindUserData(userModel);
 
-        selectPad(userModel, function(padId) {
-          openPad(padId, authData);
-        });
+        hashChanged();
       } else {
         console.log("Signed out");
         signedOut();
       }
     });
 
-    window.onhashchange = function() {
-      console.log("Hash changed " + window.location.hash);
-      var authData = firebase.getAuth();
-      selectPad(userModel, function(padId) {
-        openPad(padId, authData);
-      });
-    };
+    window.onhashchange = hashChanged;
 
     window.addEventListener('message', function(event) {
       // TODO(adam): enforce origin of message, to avoid evil extensions sending messages here.
@@ -73,6 +65,15 @@
         });
       }
     });
+
+    function hashChanged() {
+      console.log("Hash changed " + window.location.hash);
+      if (userModel) {
+        selectPad(userModel, function (padId) {
+          openPad(padId, firebase.getAuth());
+        });
+      }
+    }
 
     /**
      * Provides the id of the pad indicated by the current location, or the user's most recent pad,
@@ -370,12 +371,28 @@
     ' <' + authData.google.email + '>';
     document.getElementById('landing').className = 'hidden';
     document.getElementById('app').className = '';
+
+    if (!window.location.hash.slice((1))) {
+      var savedHash = window.localStorage.getItem('wemail.hash');
+      var savedTimestamp = window.localStorage.getItem('wemail.timestamp');
+      if (!!savedHash && (Date.now() - savedTimestamp < 10*60*60*1000)) {
+        console.log('Restoring hash ' + savedHash);
+        window.location.hash = savedHash;
+      }
+    }
   }
 
   function signedOut() {
     document.getElementById("signedin").innerText = '';
     document.getElementById('landing').className = '';
     document.getElementById('app').className = 'hidden';
+
+    var hash = window.location.hash.slice(1);
+    if (!!hash) {
+      console.log('Remembering hash ' + hash + ' for next auth');
+      window.localStorage.setItem('wemail.hash', hash);
+      window.localStorage.setItem('wemail.timestamp', Date.now());
+    }
   }
 
   function bindUserData(userModel) {
