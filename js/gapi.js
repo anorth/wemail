@@ -27,6 +27,8 @@
     /**
      * Sends a plaint-text email to a single recipient.
      *
+     * The message is marked read and archived.
+     *
      * @param  {Object} googleAuth The google object from Firebase authData, per
      *     https://www.firebase.com/docs/web/guide/login/google.html.
      * @param  {String} toEmail The intended recipient of the email.
@@ -36,7 +38,7 @@
      * @param  {Function} onFailure Function to call on failure, with reason.
      */
     sendSimpleEmail: function (googleAuth, toEmail, subject, body, onSuccess, onFailure) {
-      console.log("GAPI Sending email to " + toEmail + ', subject: "' + subject + '"');
+      console.log("Sending plain email to " + toEmail + ', subject: "' + subject + '"');
       var headerLines = [
         'To: ' + toEmail,
         'From: ' + formatFromGoogle(googleAuth),
@@ -46,7 +48,7 @@
     },
 
     /**
-     * Sends an email.
+     * Sends an email. The message is marked read and archived.
      *
      * @param  {Object} googleAuth The google object from Firebase authData, per
      *     https://www.firebase.com/docs/web/guide/login/google.html.
@@ -60,7 +62,7 @@
      */
     sendHtmlEmail: function (googleAuth, toRecipients, ccRecipients, bccRecipients,
         subject, bodyHtml, onSuccess, onFailure) {
-      console.log("GAPI Sending email to " + toRecipients.join(', ') + ', subject: "' + subject + '"');
+      console.log("Sending HTML email to " + toRecipients.join(', ') + ', subject: "' + subject + '"');
       var headerLines = [
         'From: ' + formatFromGoogle(googleAuth),
         'Subject: ' + subject,
@@ -82,14 +84,10 @@
      * @param {Function} onFailure Function to call on failure, with reason.
      */
     getDraft: function(accessToken, draftId, onSuccess, onFailure) {
-      console.log("GAPI retrieving draft message for id:", draftId);
+      console.log("Retrieving draft message for id:", draftId);
 
       // NOTE(adam): users.drafts.get is flakey, so using users.messages.get instead.
-      return gapi.client.request({
-        path: 'https://www.googleapis.com/gmail/v1/users/me/messages/' + draftId,
-        method: 'GET',
-        params: { 'access_token': accessToken }
-      }).then(function(response) {
+      return gapiRequest(accessToken, 'GET', 'messages/' + draftId).then(function(response) {
         console.log('Gmail messages.get received: ', response.result);
         onSuccess(response.result);
       }, function(reason) {
@@ -108,7 +106,7 @@
    * https://developers.google.com/gmail/api/v1/reference/users/messages/send#examples
 
    * @param {String} accessToken
-   * @param {Array} headerLines lines of the form "Header: value"
+   * @param {String[]} headerLines lines of the form "Header: value"
    * @param {String} body message body
    * @param {Function} onSuccess Function to call on success, with response.
    * @param {Function} onFailure Function to call on failure, with reason.
@@ -119,16 +117,39 @@
     // TODO(adam): if not using gapi more extensively, don't include google's JS,
     // use another lib for XHR.
     console.log("Sending email", headerLines, body);
-    return gapi.client.request({
-      path: 'https://content.googleapis.com/gmail/v1/users/me/messages/send',
-      method: 'POST',
-      params: { 'access_token': accessToken },
-      body: {
-        'raw': utf8ToB64(headerLines.join('\n') + '\n\n' + body)
-      }
-    }).then(onSuccess, function(reason) {
+    return gapiRequest(accessToken, 'POST', 'messages/send', {
+      'raw': utf8ToB64(headerLines.join('\n') + '\n\n' + body)
+    }).then(function(response) {
+      console.log("GMail send succeeded", response);
+      var msgId = response.result.id;
+      gapiRequest(accessToken, 'POST', 'messages/'+ msgId + '/modify', {
+        removeLabelIds: ['INBOX', 'UNREAD']
+      }).then(function(archiveResponse) {
+        console.log("Marked read and archived", archiveResponse)
+      }, function(archiveReason) {
+        console.log("Failed to read and archive", archiveReason)
+      });
+      onSuccess(response);
+    }, function(reason) {
       console.error("GMail send failed", reason.result.error.message);
       onFailure(reason);
+    });
+  }
+
+  /**
+   * Sends an authenticated request to the GMail API.
+   *
+   * @param {String} accessToken
+   * @param {String} method HTTP method
+   * @param {String} path URL path relative to gmail/v1/users/me
+   * @param {Object=} body optional request body JSON
+   */
+  function gapiRequest(accessToken, method, path, body) {
+    return gapi.client.request({
+      path: 'https://www.googleapis.com/gmail/v1/users/me/' + path,
+      method: method,
+      params: {'access_token': accessToken},
+      body: body
     });
   }
 

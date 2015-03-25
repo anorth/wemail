@@ -142,8 +142,10 @@
             console.log("Authenticated successfully with payload:", authData);
           }
         }, {
-          // readonly for users.messages.get, for retrieving draft details reliably.
-          scope: "email https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.readonly"
+          // gmail.compose to send email
+          // gmail.readonly for users.messages.get, for retrieving draft details reliably.
+          // gmail.modify to mark send messages as read/archived
+          scope: "email https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify"
         });
       },
 
