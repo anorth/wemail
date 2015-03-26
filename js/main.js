@@ -38,14 +38,13 @@
       //console.log('Message received from extension:', event.data, event);
       var data = event.data;
 
+      // Assumes that this tab was opened to a new wemail message, e.g. with #new
       if (data.draftId) {
         console.log('Initializing draft for draftId:', data.draftId);
         var googleAuth = firebase.getAuth().google;
 
         gmail.getDraft(googleAuth.accessToken, data.draftId, function(message) {
           // https://developers.google.com/gmail/api/v1/reference/users/messages#resource
-          var padModel = openPad(null);  // @alex, is this necessary?
-
           _.each(message.payload.headers, function(header) {
             //console.log('got header: "' + header.name + '" value: "' + header.value + '"');
             switch (header.name) {
@@ -67,7 +66,7 @@
     });
 
     function hashChanged() {
-      console.log("Hash changed " + window.location.hash);
+      console.log("Hash changed: " + window.location.hash || "[null]");
       if (userModel) {
         selectPad(userModel, function (padId) {
           openPad(padId, firebase.getAuth());
@@ -88,8 +87,9 @@
       if (padId) {
         callback(padId);
       } else {
+        // Find most recent pad
         userModel.getPads(function(pads) {
-          console.log('Users pads: ', pads);
+          console.log('Users pads: ', _.keys(pads));
           var lastPadId = (typeof pads === 'object') ? _.findLastKey(pads) : null;
           callback(lastPadId);
         });
@@ -98,8 +98,10 @@
 
     function openPad(padId, authData) {
       authData = authData || firebase.getAuth();
+      if (padId === 'new') { padId = null; }
 
       if (!!padModel && padModel.id === padId) { return; }
+      console.log("Opening pad " + (padId || "[new]"));
       padModel = model.pad(padId, authData.uid);
       window.location.hash = padModel.id;
 
@@ -228,7 +230,13 @@
       },
 
       pad: function(padId, userId) {
-        return createPadModel(this.refForPad(padId, userId));
+        var padModel = createPadModel(this.refForPad(padId, userId));
+        if (!padId) {
+          var now = new Date();
+          var dateStr = now.getDate() + '-' + MONTHS[now.getMonth()] + "-" + now.getFullYear();
+          padModel.setHeader('subject', "Draft email " + dateStr);
+        }
+        return padModel;
       },
 
       refForPad: function(padId, userId) {
@@ -236,10 +244,8 @@
           return padsRef.child(padId);
         } else {
           if (!userId) { throw "User id required for new pad"; }
-          var now = new Date();
-          var dateStr = now.getDate() + '-' + MONTHS[now.getMonth()] + "-" + now.getFullYear();
           var ref = padsRef.push();
-          ref.update({owner: userId, subject: "Draft email " + dateStr});
+          ref.update({owner: userId});
           return ref;
         }
       },
@@ -349,7 +355,7 @@
 
       onRemoved: function(callback) {
         padRef.child('owner').on('value', function(snapshot) {
-          console.log("Owner: ", snapshot.val());
+          //console.log("Owner: ", snapshot.val());
           if (snapshot.val() == null) { callback(); }
         })
       }

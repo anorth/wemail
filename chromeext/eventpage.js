@@ -28,8 +28,9 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       "Received message from the extension");
 
   chrome.tabs.create({
-    //url: 'http://localhost:8000'
-    url: 'https://wemail.firebaseapp.com/'
+    //url: 'http://localhost:8000/#new'
+    //url: 'http://localhost:63343/wemail/#new'
+    url: 'https://wemail.firebaseapp.com/#new'
   }, function(tab) {
     // Send the payload to the wemail page once it is ready to receive messages (i.e. loaded).
     var listener = createTabUpdatedListener(tab.id, request);
