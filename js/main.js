@@ -67,6 +67,9 @@
 
     function hashChanged() {
       console.log("Hash changed: " + window.location.hash || "[null]");
+      if (window.location.hash.length <= 1) {
+        padModel = null;
+      }
       if (userModel) {
         selectPad(userModel, function (padId) {
           openPad(padId, firebase.getAuth());
@@ -89,7 +92,7 @@
       } else {
         // Find most recent pad
         userModel.getPads(function(pads) {
-          console.log('Users pads: ', _.keys(pads));
+          //console.log('Users pads: ', _.keys(pads));
           var lastPadId = (typeof pads === 'object') ? _.findLastKey(pads) : null;
           callback(lastPadId);
         });
@@ -112,7 +115,9 @@
       // Currently, this is the only way a pad ends up in a user's list; they have to visit it
       // at least once, presumably via a linked emailed to them.
       padModel.onHeaderChanged('subject', function(subject) {
-        userModel.rememberPad(padModel.id, subject);
+        if (subject !== null) { // Don't trigger when pad being deleted
+          userModel.rememberPad(padModel.id, subject);
+        }
       });
 
       // Migration to ensure pads have owners: first viewer wins.
@@ -166,8 +171,12 @@
           if (owner === authData.uid || owner == null) {
             console.log("Retracting and deleting pad " + padModel.id);
             padModel.collaborators(function(collaborators) {
-              _.forOwn(collaborators, function(val, id) {
-                model.user(id).forgetPad(padModel.id);
+              _.forOwn(collaborators, function(val, uid) {
+                //if (uid == authData.uid) {
+                //  userModel.forgetPad(padModel.id)
+                //} else {
+                  model.user(uid).forgetPad(padModel.id);
+                //}
               });
               padModel.remove(); // Observer will see and refresh location.hash
             });
