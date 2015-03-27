@@ -1,8 +1,8 @@
 (function() {
 
-  var MONTHS = ["January", "February", "March",
-      "April", "May", "June", "July", "August", "September",
-      "October", "November", "December"];
+  var MONTHS = ["Jan", "Feb", "Mar",
+      "Apr", "May", "Jun", "Jul", "Aug", "Sep",
+      "Oct", "Nov", "Dec"];
 
   /////
   ///// Main
@@ -324,12 +324,17 @@
     document.getElementById('chat-send').onclick = function() {
       var input = document.getElementById('chat-input');
       if (!!input.value) {
-        padModel.sendChat(authData.uid, input.value);
+        padModel.sendChat(authData.uid, authData.google.displayName, input.value);
         input.value = '';
       }
     };
     bindList(padModel.onChatChanged, document.getElementById('messages'), function(val) {
-      return '<div class="chat-author">' + val.userId + '</div>' +
+      var d = new Date(val.timestamp);
+      var dateStr =  d.getDate() + ' ' + MONTHS[d.getMonth()] + ', ' +
+          d.getHours() + ':' + d.getMinutes() + ' ';
+
+      return '<div class="chat-author">' + (val.displayName || val.userId) + '</div>' +
+          '<div class="chat-timestamp">' + dateStr + '</div>' +
           '<div class="chat-message">' + val.message + '</div>';
     });
 

@@ -2,6 +2,9 @@
  * Data models and Firebase.
  */
 (function () {
+  var SUBJECT_MONTHS = ["January", "February", "March",
+    "April", "May", "June", "July", "August", "September",
+    "October", "November", "December"];
 
   window.model = {
     createRootModel: createRootModel
@@ -20,7 +23,7 @@
         var padModel = createPadModel(this.refForPad(padId, userId));
         if (!padId) {
           var now = new Date();
-          var dateStr = now.getDate() + '-' + MONTHS[now.getMonth()] + "-" + now.getFullYear();
+          var dateStr = now.getDate() + '-' + SUBJECT_MONTHS[now.getMonth()] + "-" + now.getFullYear();
           padModel.setHeader('subject', "Draft email " + dateStr);
         }
         return padModel;
@@ -128,9 +131,10 @@
         fbutil.onChanged(invitedRef, callback);
       },
 
-      sendChat: function (userId, message) {
+      sendChat: function (userId, displayName, message) {
         padRef.child('chat').push().set({
           userId: userId,
+          displayName: displayName,
           message: message,
           timestamp: Date.now()
         });
