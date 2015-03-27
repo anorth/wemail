@@ -42,8 +42,9 @@
       if (data.draftId) {
         console.log('Initializing draft for draftId:', data.draftId);
         var googleAuth = firebase.getAuth().google;
+        var messageId = data.draftId;
 
-        gmail.getDraft(googleAuth.accessToken, data.draftId, function(headers, bodyHtml) {
+        gmail.getDraft(googleAuth.accessToken, messageId, function(draftId, headers, bodyHtml) {
           // Populate the headers from the draft data.
           // TODO(adam): do other fields, e.g. gmail field Message-ID.
           var HEADER_NAMES = ['Subject', 'To', 'Cc', 'Bcc', 'In-Reply-To'];
@@ -54,6 +55,9 @@
               console.log('setting model header ' + headerName + ' to ' + headers[headerName]);
             }
           });
+
+          // Hang on to the draft id so we can delete the Gmail copy after sending.
+          padModel.setHeader('gmail-draft-id', draftId);
 
           // Populate the body from the draft data.
           if (firepad.ready) {  // poor man's async.join()
@@ -152,9 +156,8 @@
           }
         }, {
           // gmail.compose to send email
-          // gmail.readonly for users.messages.get, for retrieving draft details reliably.
           // gmail.modify to mark send messages as read/archived
-          scope: "email https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify"
+          scope: "email https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.modify"
         });
       },
 
@@ -218,8 +221,12 @@
                 body,
                 function (success) {
                   console.log("Mail was sent!");
+
+                  // TODO(adam): consider using the chrome extension to refresh the UI, as the
+                  // deleted draft still appears.
+                  gmail.deleteDraft(googleAuth.accessToken, headers['gmail-draft-id']);
+
                   onSuccess(success);
-                  // TODO(alex): Delete draft in GMail
                 }, function (reason) {
                   console.log("Failed to send :-(");
                   onFailure(reason);
@@ -300,11 +307,10 @@
 
     // Mail headers
     var headers = document.getElementById('headers');
-    bindHeaderField(padModel, 'to', headers.elements['to']);
-    bindHeaderField(padModel, 'cc', headers.elements['cc']);
-    bindHeaderField(padModel, 'bcc', headers.elements['bcc']);
-    bindHeaderField(padModel, 'subject', headers.elements['subject']);
-    bindHeaderField(padModel, 'in-reply-to', headers.elements['in-reply-to']);
+    var HEADER_NAMES = ['to', 'cc', 'bcc', 'subject', 'in-reply-to', 'gmail-draft-id'];
+    _.each(HEADER_NAMES, function(headerName) {
+      bindHeaderField(padModel, headerName, headers.elements[headerName]);
+    });
 
     // Collaborators
     var invitation = document.getElementById('invitation');

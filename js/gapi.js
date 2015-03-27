@@ -82,22 +82,57 @@
      * Gets the specified draft from the Google REST API.
      *
      * @param {String} accessToken
-     * @param {String} draftId Id of the draft to retrieve, as a hex string.
+     * @param {String} messageId Id of the message to retrieve, as a hex string.
      * @param {Function} onSuccess Function to call on success, with:
+     *     @param {String} draftId Draft ID useful for Users.drafts REST calls.
+     *         Note that draftId may but does not necessarily equal messageId.
      *     @param {Object} headers Map of headers, e.g. headers['Subject'] = 'I quit'
      *     @param {String} bodyHtml HTML extracted representing the body of the draft.
      * @param {Function} onFailure Function to call on failure, with reason.
      */
-    getDraft: function(accessToken, draftId, onSuccess, onFailure) {
-      console.log("Retrieving draft message for id:", draftId);
+    getDraft: function(accessToken, messageId, onSuccess, onFailure) {
+      console.log("Retrieving draft message for message id:", messageId);
 
-      // NOTE(adam): users.drafts.get is flakey, so using users.messages.get instead.
-      return gapiRequest(accessToken, 'GET', 'messages/' + draftId).then(function(response) {
-        console.log('Gmail messages.get received: ', response.result);
-        onSuccess(getDraftHeaders(response.result), getDraftBodyHtml(response.result));
+      // First map the message id to a draft id ...
+      return gapiRequest(accessToken, 'GET', 'drafts').then(function(response) {
+        // NOTE(adam): assumes that the current draft is in the N most recent drafts.
+        // If this assumption is violated, best to cursor back and retrieve more drafts.
+        console.log('Gmail drafts.get received: ', response.result);
+
+        return messageIdToDraftId(response.result, messageId);
       }, function(reason) {
-        console.error("Gmail messages.get failed", reason.result.error.message);
+        console.error("Gmail drafts.get failed", reason.result.error.message);
         onFailure(reason);
+      }).then(function(draftId) {
+        if (!draftId) {
+          console.error('No draft id found for message id ', messageId);
+          onFailure('Draft not found');
+          return;
+        }
+
+        // ... then get the contents using the draft id.
+        return gapiRequest(accessToken, 'GET', 'drafts/' + draftId).then(function(response) {
+          console.log('Gmail drafts.get(' + draftId + ') received: ', response.result);
+          onSuccess(draftId, getDraftHeaders(response.result.message), getDraftBodyHtml(response.result.message));
+        }, function(reason) {
+          console.error("Gmail drafts.get(' + draftId + ') failed", reason.result.error.message);
+          onFailure(reason);
+        });
+      });
+    },
+
+    /**
+     * Deletes the original draft from within Gmail.
+     * @param {String} accessToken
+     * @param {String} draftId Id of the draft to retrieve, as a hex string.
+     */
+    deleteDraft: function(accessToken, draftId) {
+      console.log('Deleting Gmail draft message for id: ' + draftId);
+
+      return gapiRequest(accessToken, 'DELETE', 'drafts/' + draftId).then(function(response) {
+        console.log('Gmail drafts.delete successful.');
+      }, function(reason) {
+        console.error('Gmail drafts.delete failed: ', reason);
       });
     }
   };
@@ -194,6 +229,21 @@
   function getDraftBodyHtml(message) {
     // HACK(adam): can't assume 'text/html' exists and is the 2nd part.
     return b64ToUtf8(message.payload.parts[1].body.data);
+  }
+
+  /**
+   * Given the response of drafts.get, converts a specific message id to a draft id.
+   *
+   * @param draftsGetResponse {https://developers.google.com/gmail/api/v1/reference/users/drafts#resource}
+   * @param messageId Hex ID for message.
+   * @return Decimal ID for draft or empty string if not found.
+   */
+  function messageIdToDraftId(draftsGetResponse, messageId) {
+    var draft = _.find(draftsGetResponse.drafts, function(draft) {
+      return draft.message.id == messageId;
+    })
+
+    return draft ? draft.id : '';
   }
 })();
 
