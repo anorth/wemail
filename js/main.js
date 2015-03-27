@@ -43,22 +43,24 @@
         console.log('Initializing draft for draftId:', data.draftId);
         var googleAuth = firebase.getAuth().google;
 
-        gmail.getDraft(googleAuth.accessToken, data.draftId, function(message) {
-          // https://developers.google.com/gmail/api/v1/reference/users/messages#resource
-          _.each(message.payload.headers, function(header) {
-            //console.log('got header: "' + header.name + '" value: "' + header.value + '"');
-            switch (header.name) {
-              case 'Subject':
-              case 'To':
-              case 'Cc':
-              case 'Bcc': {
-                padModel.setHeader(header.name.toLowerCase(), header.value);
-              }
-              // TODO(adam): do other fields, e.g. gmail fields In-Reply-To, Message-ID
+        gmail.getDraft(googleAuth.accessToken, data.draftId, function(headers, bodyHtml) {
+          // Populate the headers from the draft data.
+          // TODO(adam): do other fields, e.g. gmail fields In-Reply-To, Message-ID.
+          var HEADER_NAMES = ['Subject', 'To', 'Cc', 'Bcc'];
+          console.log('got draft headers:', headers);
+          _.each(HEADER_NAMES, function(headerName) {
+            if (headerName in headers) {
+              padModel.setHeader(headerName.toLowerCase(), headers[headerName]);
+              console.log('setting model header ' + headerName + ' to ' + headers[headerName]);
             }
           });
 
-          // TODO: load the draft body.
+          // Populate the body from the draft data.
+          if (firepad.ready) {  // poor man's async.join()
+            firepad.setHtml(bodyHtml);
+          } else {
+            firepad.on('ready', _.bind(firepad.setHtml, firepad, bodyHtml));
+          }
         }, function(response) {
           // failure
         });
@@ -494,7 +496,10 @@
       defaultText: ''
     });
 
-    firepad.on('ready', function() { console.log("Firepad ready"); });
+    firepad.on('ready', function() {
+      firepad.ready = true;
+      console.log("Firepad ready");
+    });
     firepad.on('synced', function() { console.log("Firepad synced"); });
     return firepad;
   }

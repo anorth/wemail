@@ -79,8 +79,9 @@
      *
      * @param {String} accessToken
      * @param {String} draftId Id of the draft to retrieve, as a hex string.
-     * @param {Function} onSuccess Function to call on success, with response of format per
-     *     https://developers.google.com/gmail/api/v1/reference/users/messages#resource
+     * @param {Function} onSuccess Function to call on success, with:
+     *     @param {Object} headers Map of headers, e.g. headers['Subject'] = 'I quit'
+     *     @param {String} bodyHtml HTML extracted representing the body of the draft.
      * @param {Function} onFailure Function to call on failure, with reason.
      */
     getDraft: function(accessToken, draftId, onSuccess, onFailure) {
@@ -89,7 +90,7 @@
       // NOTE(adam): users.drafts.get is flakey, so using users.messages.get instead.
       return gapiRequest(accessToken, 'GET', 'messages/' + draftId).then(function(response) {
         console.log('Gmail messages.get received: ', response.result);
-        onSuccess(response.result);
+        onSuccess(getDraftHeaders(response.result), getDraftBodyHtml(response.result));
       }, function(reason) {
         console.error("Gmail messages.get failed", reason.result.error.message);
         onFailure(reason);
@@ -166,6 +167,30 @@
     return decodeURIComponent(escape(base64.decode( str )));
   }
 
+  /**
+   * Extracts a map of email headers from the supplied Gmail message.
+   *
+   * @param {https://developers.google.com/gmail/api/v1/reference/users/messages#resource} message
+   * @returns {Object} Map of header name ({String}) to header value ({String}).
+   */
+  function getDraftHeaders(message) {
+    var result = {};
+    _.each(message.payload.headers, function(header) {
+      result[header.name] = header.value;
+    });
+    return result;
+  }
+
+  /**
+   * Extracts the HTML text for the body from the supplied Gmail message.
+   *
+   * @param {https://developers.google.com/gmail/api/v1/reference/users/messages#resource} message
+   * @returns {String} HTML body of the email.
+   */
+  function getDraftBodyHtml(message) {
+    // HACK(adam): can't assume 'text/html' exists and is the 2nd part.
+    return b64ToUtf8(message.payload.parts[1].body.data);
+  }
 })();
 
 
