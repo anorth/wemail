@@ -8,7 +8,7 @@ function logMessageData(messageForm) {
   var formData = {};
   messageForm.find('input[type=hidden]').each(function() {
     var name = $(this).attr('name');
-    var val = $(this).attr('value');
+    var val = $(this).val();
 
     if (val == '') {
       return;
@@ -20,6 +20,18 @@ function logMessageData(messageForm) {
   });
 
   console.log('Sending to event page data for email:', formData);
+}
+
+/**
+ * This is called once the draft id exists and is ready to be relayed to the
+ * WeMail page.
+ */
+function onDraftIdReady(draftInputField) {
+  chrome.runtime.sendMessage({
+    draftId: draftInputField.val()
+  }, function(response) {
+    console.log('Message sent; received response:', response);
+  });
 }
 
 // Technique to detect new draft emails per:
@@ -47,12 +59,21 @@ $('body').bind('animationstart MSAnimationStart webkitAnimationStart', function(
       // Gmail stores message metadata as hidden fields within this form.
       logMessageData(messageForm);
 
-      // Background script will be responsible for invoking new wemail page
-      chrome.runtime.sendMessage({
-        draftId: messageForm.find('input[name=draft]').attr('value')
-      }, function(response) {
-        console.log('Message sent; received response:', response);
-      });
+      var draftInputField = messageForm.find('input[name=draft]');
+      // TODO(adam): do this without polling, i.e. MutationObserver
+      console.debug('Checking if the draft id field is ready...', draftInputField);
+      function pollDraftField() {
+        if (draftInputField.val() && draftInputField.val() != String(undefined)) {
+          // Background script will be responsible for invoking new wemail page
+          console.debug('Draft id field is ready.');
+          draftButton.text('Share Draft');
+          onDraftIdReady(draftInputField);
+        } else {
+          draftButton.html('Loading&hellip;');
+          setTimeout(pollDraftField, 100);
+        }
+      }
+      pollDraftField();
     });
 
     draftButton.insertBefore(sendButton);
