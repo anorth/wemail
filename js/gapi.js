@@ -44,7 +44,7 @@
         'From: ' + formatFromGoogle(googleAuth),
         'Subject: ' + subject
       ];
-      return sendEmailRequest(googleAuth.accessToken, headerLines, body, onSuccess, onFailure);
+      return sendEmailRequest(googleAuth.accessToken, headerLines, body, '', onSuccess, onFailure);
     },
 
     /**
@@ -56,26 +56,28 @@
      * @param {Array} ccRecipients email addresses for the "Cc" line
      * @param {Array} bccRecipients email addresses for the "Bcc" line
      * @param {String} subject The subject of the email.
-     * @param {String} inReplyTo The "In-Reply-To" field of the email, or empty string.
+     * @param {Object} extraHeaders Map of other headers to include in the email.
      * @param {String} bodyHtml The body of the email.
+     * @param {String} threadId Gmail thread ID to reply on the same thread as.
+     *     Pass '' if there is no thread (i.e. this is the first email).
      * @param {Function} onSuccess Function to call on success, with response.
      * @param {Function} onFailure Function to call on failure, with reason.
      */
     sendHtmlEmail: function (googleAuth, toRecipients, ccRecipients, bccRecipients,
-        subject, inReplyTo, bodyHtml, onSuccess, onFailure) {
+        subject, extraHeaders, bodyHtml, threadId, onSuccess, onFailure) {
       console.log("Sending HTML email to " + toRecipients.join(', ') + ', subject: "' + subject + '"');
       var headerLines = [
         'From: ' + formatFromGoogle(googleAuth),
         'Subject: ' + subject,
         'Content-Type: text/html; charset=UTF-8'
       ];
-      if (inReplyTo) {
-        headerLines.push('In-Reply-To: ' + inReplyTo);
-      }
+      _.each(extraHeaders, function(val, key) {
+        headerLines.push(key + ': ' + val);
+      });
       _.forEach(toRecipients, function(r) {headerLines.push('to: ' + r)});
       _.forEach(ccRecipients, function(r) {headerLines.push('cc: ' + r)});
       _.forEach(bccRecipients, function(r) {headerLines.push('bcc: ' + r)});
-      return sendEmailRequest(googleAuth.accessToken, headerLines, bodyHtml, onSuccess, onFailure);
+      return sendEmailRequest(googleAuth.accessToken, headerLines, bodyHtml, threadId, onSuccess, onFailure);
     },
 
     /**
@@ -99,21 +101,25 @@
         // If this assumption is violated, best to cursor back and retrieve more drafts.
         console.log('Gmail drafts.get received: ', response.result);
 
-        return messageIdToDraftId(response.result, messageId);
+        return draftDataForMessageId(response.result, messageId);
       }, function(reason) {
         console.error("Gmail drafts.get failed", reason.result.error.message);
         onFailure(reason);
-      }).then(function(draftId) {
-        if (!draftId) {
-          console.error('No draft id found for message id ', messageId);
+      }).then(function(draftData) {
+        if (!draftData) {
+          console.error('No draft data found for message id ', messageId);
           onFailure('Draft not found');
           return;
         }
 
+        var draftId = draftData.draftId;
+        var threadId = draftData.threadId;
+
         // ... then get the contents using the draft id.
         return gapiRequest(accessToken, 'GET', 'drafts/' + draftId).then(function(response) {
           console.log('Gmail drafts.get(' + draftId + ') received: ', response.result);
-          onSuccess(draftId, getDraftHeaders(response.result.message), getDraftBodyHtml(response.result.message));
+          onSuccess(draftId, threadId,
+              getDraftHeaders(response.result.message), getDraftBodyHtml(response.result.message));
         }, function(reason) {
           console.error("Gmail drafts.get(' + draftId + ') failed", reason.result.error.message);
           onFailure(reason);
@@ -148,18 +154,26 @@
    * @param {String} accessToken
    * @param {String[]} headerLines lines of the form "Header: value"
    * @param {String} body message body
+   * @param {String} threadId Gmail thread ID to reply on the same thread as.
+   *     Pass '' if there is no thread (i.e. this is the first email).
    * @param {Function} onSuccess Function to call on success, with response.
    * @param {Function} onFailure Function to call on failure, with reason.
    */
-  function sendEmailRequest(accessToken, headerLines, body, onSuccess, onFailure) {
+  function sendEmailRequest(accessToken, headerLines, body, threadId, onSuccess, onFailure) {
     // NOTE(adam): to make this work, Gmail API needed to be enabled within the developer console:
     // https://console.developers.google.com/project/wemail-dev/apiui/apiview/gmail/usage
     // TODO(adam): if not using gapi more extensively, don't include google's JS,
     // use another lib for XHR.
-    console.log("Sending email", headerLines, body);
-    return gapiRequest(accessToken, 'POST', 'messages/send', {
+
+    var requestParams = {
       'raw': utf8ToB64(headerLines.join('\n') + '\n\n' + body)
-    }).then(function(response) {
+    };
+    if (threadId) {
+      requestParams['threadId'] = threadId;
+    }
+
+    console.log("Sending email", headerLines, body);
+    return gapiRequest(accessToken, 'POST', 'messages/send', requestParams).then(function(response) {
       console.log("GMail send succeeded", response);
       var msgId = response.result.id;
       gapiRequest(accessToken, 'POST', 'messages/'+ msgId + '/modify', {
@@ -232,18 +246,23 @@
   }
 
   /**
-   * Given the response of drafts.get, converts a specific message id to a draft id.
+   * Given the response of drafts.get, converts a specific message id to a draft id and thread id.
    *
    * @param draftsGetResponse {https://developers.google.com/gmail/api/v1/reference/users/drafts#resource}
    * @param messageId Hex ID for message.
-   * @return Decimal ID for draft or empty string if not found.
+   * @return {Object} Map with key/values, or null if not found:
+   *     draftId -> decimal ID for draft
+   *     threadId -> hex thread ID for draft
    */
-  function messageIdToDraftId(draftsGetResponse, messageId) {
+  function draftDataForMessageId(draftsGetResponse, messageId) {
     var draft = _.find(draftsGetResponse.drafts, function(draft) {
       return draft.message.id == messageId;
     })
 
-    return draft ? draft.id : '';
+    return draft ? {
+      draftId: draft.id,
+      threadId: draft.message.threadId
+    } : null;
   }
 })();
 

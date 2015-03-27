@@ -49,8 +49,7 @@ $('body').bind('animationstart MSAnimationStart webkitAnimationStart', function(
 
       // Background script will be responsible for invoking new wemail page
       chrome.runtime.sendMessage({
-        draftId: messageForm.find('input[name=draft]').attr('value'),
-        threadId: messageForm.find('input[name=rm]').attr('value')  // empty if new thread
+        draftId: messageForm.find('input[name=draft]').attr('value')
       }, function(response) {
         console.log('Message sent; received response:', response);
       });

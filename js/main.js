@@ -61,10 +61,11 @@
         var googleAuth = firebase.getAuth().google;
         var messageId = data.draftId;
 
-        gmail.getDraft(googleAuth.accessToken, messageId, function(draftId, headers, bodyHtml) {
+        gmail.getDraft(googleAuth.accessToken, messageId,
+            function(draftId, threadId, headers, bodyHtml) {
           // Populate the headers from the draft data.
           // TODO(adam): do other fields, e.g. gmail field Message-ID.
-          var HEADER_NAMES = ['Subject', 'To', 'Cc', 'Bcc', 'In-Reply-To'];
+          var HEADER_NAMES = ['Subject', 'To', 'Cc', 'Bcc', 'In-Reply-To', 'Message-ID', 'References'];
           console.log('got draft headers:', headers);
           _.each(HEADER_NAMES, function(headerName) {
             if (headerName in headers) {
@@ -75,6 +76,8 @@
 
           // Hang on to the draft id so we can delete the Gmail copy after sending.
           padModel.setHeader('gmail-draft-id', draftId);
+          // Also hang on to the thread id so the draft gets set on the correct thread.
+          padModel.setHeader('thread-id', threadId);
 
           // Populate the body from the draft data.
           if (firepad.ready) {  // poor man's async.join()
@@ -224,6 +227,11 @@
             var toRecipients = splitEmailAddresses(headers['to']);
             var ccRecipients = splitEmailAddresses(headers['cc']);
             var bccRecipients = splitEmailAddresses(headers['bcc']);
+            var extraHeaders = {
+              'In-Reply-To': headers['in-reply-to'],
+              'Message-ID': headers['message-id'],
+              'References': headers['references']
+            };
             _.forEach(collaborators, function(collaborator) {
               if (!!collaborator.email && collaborator.email !== googleAuth.email) {
                 bccRecipients.push(collaborator.email);
@@ -234,8 +242,9 @@
                 ccRecipients,
                 bccRecipients,
                 headers['subject'],
-                headers['in-reply-to'],
+                extraHeaders,
                 body,
+                headers['thread-id'],
                 function (success) {
                   console.log("Mail was sent!");
 
@@ -324,7 +333,9 @@
 
     // Mail headers
     var headers = document.getElementById('headers');
-    var HEADER_NAMES = ['to', 'cc', 'bcc', 'subject', 'in-reply-to', 'gmail-draft-id'];
+    var HEADER_NAMES = [
+        'to', 'cc', 'bcc', 'subject', 'in-reply-to', 'message-id', 'references', 'thread-id',
+        'gmail-draft-id'];
     _.each(HEADER_NAMES, function(headerName) {
       bindHeaderField(padModel, headerName, headers.elements[headerName]);
     });
