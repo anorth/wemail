@@ -42,11 +42,15 @@
       </div>
 
       <div id="app" class="hidden">
-        <h1>Let's email</h1>
-        <p>
-          Signed in as <span id="signedin"></span> |
-          <a href="#" id="signout">Sign out</a>
-        </p>
+        <div id="title">
+          <div class="title">Let's email</div>
+          <div class="account">
+            <div>Signed in as <span id="signedin"></span></div>
+            <div>
+              <a href="#" id="signout">Sign out</a>
+            </div>
+          </div>
+        </div>
         <div id="panels">
           <div id="leftpanel">
             <form id="headers">
@@ -60,6 +64,9 @@
             <div id="firepad"></div>
           </div>
           <div id="rightpanel">
+            <h2>
+              Collaborators
+            </h2>
             <div id="collaborators-wrapper">
               <ul id="collaborators"></ul>
               <ul id="invited"></ul>
@@ -82,7 +89,12 @@
             <button id="deletepad">Delete this draft</button>
             <button id="send">Send from my GMail</button>
           </div>
-
+          <p>
+            Changes are saved automatically. You can come back later to finish.
+          </p>
+          <p>
+            After you send, the email will be in your GMail "Sent" folder and this draft and chat will be deleted for good.
+          </p>
           <p class="draftlist">
             <strong>My drafts:</strong>
             <ul id="otherpads"></ul>

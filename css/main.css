@@ -62,6 +62,7 @@ textarea {
    ========================================================================== */
 
 body {
+  margin-bottom: 40px;
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 14px;
 }
@@ -71,10 +72,27 @@ body {
   margin: 0 auto 0 auto;
 }
 
+#title {
+  display: flex;
+  margin: 8px 0 8px 0;
+}
+
+#title .title {
+  font-size: 30px;
+  font-weight: bold;
+}
+
+#title .account {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 2;
+  text-align: right;
+}
+
 #panels {
   border: 1px solid #999999;
   display: flex;
-  height: 530px;
+  height: 534px;
 }
 
 
@@ -131,8 +149,15 @@ a.powered-by-firepad {
   background: #eee;
 }
 
+#rightpanel h2 {
+  margin: 0 0 0 0;
+  padding-left: 6px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
 #collaborators-wrapper {
-  flex: 0 0 100px;
+  flex: 0 0 60px;
   overflow-y: scroll;
   overflow-x: hidden;
 }
@@ -220,6 +245,20 @@ ul#messages .chat-message {
 
 #footer button#send {
   margin-left: 20px;
+}
+
+#footer .buttons {
+  margin-bottom: 18px;
+}
+
+#footer p {
+  margin-top: 8px;
+  margin-bottom: 4px;
+  color: #222;
+}
+
+#footer p.draftlist {
+  margin-top: 24px;
 }
 
 #otherpads {
