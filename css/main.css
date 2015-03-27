@@ -182,13 +182,13 @@ ul#messages li {
 
 ul#messages .chat-author {
   display: inline-block;
+  margin-right: 4px;
   font-size: 10px;
   color: #999;
 }
 
 ul#messages .chat-timestamp {
   display: inline-block;
-  margin-left: 4px;
   font-size: 10px;
   color: #bbb;
 }

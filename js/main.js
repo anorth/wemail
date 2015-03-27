@@ -192,7 +192,7 @@
         });
       },
 
-      sendEmail: function() {
+      sendEmail: function(onSuccess, onFailure) {
         var body = firepad.getHtml();
         var googleAuth = firebase.getAuth().google;
 
@@ -218,9 +218,11 @@
                 body,
                 function (success) {
                   console.log("Mail was sent!");
-                  // TODO(alex): Delete draft here and in GMail
+                  onSuccess(success);
+                  // TODO(alex): Delete draft in GMail
                 }, function (reason) {
                   console.log("Failed to send :-(");
+                  onFailure(reason);
                 });
           });
         });
@@ -237,7 +239,24 @@
     document.getElementById("signout").onclick = handlers.signOut;
     document.getElementById("newpad").onclick = handlers.newPad;
     document.getElementById("deletepad").onclick = handlers.deletePad;
-    document.getElementById("send").onclick = handlers.sendEmail;
+    document.getElementById("send").onclick = function(e) {
+      var button = e.target;
+      var oldTitle = button.value;
+      button.disabled = true;
+      button.value = "Sending...";
+      handlers.sendEmail(function() {
+        alert('Sent!');
+        button.disabled = false;
+        button.value = oldTitle;
+        handlers.deletePad();
+      }, function(e) {
+        button.disabled = false;
+        button.value = oldTitle;
+        alert('Send failed. Please sign in to try again.');
+        handlers.signOut();
+        // TODO(alex): Display failures to user
+      });
+    };
   }
 
   function signedIn(authData) {
