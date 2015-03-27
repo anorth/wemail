@@ -45,8 +45,8 @@
 
         gmail.getDraft(googleAuth.accessToken, data.draftId, function(headers, bodyHtml) {
           // Populate the headers from the draft data.
-          // TODO(adam): do other fields, e.g. gmail fields In-Reply-To, Message-ID.
-          var HEADER_NAMES = ['Subject', 'To', 'Cc', 'Bcc'];
+          // TODO(adam): do other fields, e.g. gmail field Message-ID.
+          var HEADER_NAMES = ['Subject', 'To', 'Cc', 'Bcc', 'In-Reply-To'];
           console.log('got draft headers:', headers);
           _.each(HEADER_NAMES, function(headerName) {
             if (headerName in headers) {
@@ -214,6 +214,7 @@
                 ccRecipients,
                 bccRecipients,
                 headers['subject'],
+                headers['in-reply-to'],
                 body,
                 function (success) {
                   console.log("Mail was sent!");
@@ -430,6 +431,7 @@
     bindHeaderField(padModel, 'cc', headers.elements['cc']);
     bindHeaderField(padModel, 'bcc', headers.elements['bcc']);
     bindHeaderField(padModel, 'subject', headers.elements['subject']);
+    bindHeaderField(padModel, 'in-reply-to', headers.elements['in-reply-to']);
 
     // Collaborators
     var invitation = document.getElementById('invitation');

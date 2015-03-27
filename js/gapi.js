@@ -56,18 +56,22 @@
      * @param {Array} ccRecipients email addresses for the "Cc" line
      * @param {Array} bccRecipients email addresses for the "Bcc" line
      * @param {String} subject The subject of the email.
+     * @param {String} inReplyTo The "In-Reply-To" field of the email, or empty string.
      * @param {String} bodyHtml The body of the email.
      * @param {Function} onSuccess Function to call on success, with response.
      * @param {Function} onFailure Function to call on failure, with reason.
      */
     sendHtmlEmail: function (googleAuth, toRecipients, ccRecipients, bccRecipients,
-        subject, bodyHtml, onSuccess, onFailure) {
+        subject, inReplyTo, bodyHtml, onSuccess, onFailure) {
       console.log("Sending HTML email to " + toRecipients.join(', ') + ', subject: "' + subject + '"');
       var headerLines = [
         'From: ' + formatFromGoogle(googleAuth),
         'Subject: ' + subject,
         'Content-Type: text/html; charset=UTF-8'
       ];
+      if (inReplyTo) {
+        headerLines.push('In-Reply-To: ' + inReplyTo);
+      }
       _.forEach(toRecipients, function(r) {headerLines.push('to: ' + r)});
       _.forEach(ccRecipients, function(r) {headerLines.push('cc: ' + r)});
       _.forEach(bccRecipients, function(r) {headerLines.push('bcc: ' + r)});
