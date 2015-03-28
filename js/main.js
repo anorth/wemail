@@ -245,7 +245,9 @@
 
                   // TODO(adam): consider using the chrome extension to refresh the UI, as the
                   // deleted draft still appears.
-                  gmail.deleteDraft(googleAuth.accessToken, headers['gmail-draft-id']);
+                  if (headers['gmail-draft-id']) {
+                    gmail.deleteDraft(googleAuth.accessToken, headers['gmail-draft-id']);
+                  }
 
                   onSuccess(success);
                 }, function (reason) {
