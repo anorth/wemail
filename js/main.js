@@ -174,8 +174,9 @@
       signIn: _.bind(gmail.authorize, gmail, onGoogleSignin),
 
       signOut: function() {
+        gapi.auth.signOut();
         firebase.unauth();
-        window.location.reload();
+        //window.location.reload();
       },
 
       newPad: function() {
