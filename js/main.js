@@ -16,6 +16,20 @@
     var padModel;
     var firepad;
 
+    // Google cookie doesn't actually get wiped, so we're technically always still logged in.
+    // ... but take advantage of the fact that we signed our from firebase.
+    if (firebase.getAuth()) {
+      // Since the Google token expires after 1 hr, get a new one:
+      gmail.checkAuth(function(response) {
+        if (response.error) {
+          console.log('User not already signed in with Google.');
+        } else {
+          // Update the firebase auth with the new Google token:
+          onGoogleSignin(response);
+        }
+      });
+    }
+
     firebase.onAuth(function (authData) {
       if (authData != null) {
         console.log("Signed in " + authData.uid);
@@ -41,11 +55,9 @@
       // Assumes that this tab was opened to a new wemail message, e.g. with #new
       if (data.draftId) {
         console.log('Initializing draft for draftId:', data.draftId);
-        var googleAuth = firebase.getAuth().google;
         var messageId = data.draftId;
 
-        gmail.getDraft(googleAuth.accessToken, messageId,
-            function(draftId, threadId, headers, bodyHtml) {
+        gmail.getDraft(messageId, function(draftId, threadId, headers, bodyHtml) {
           // Populate the headers from the draft data.
           // TODO(adam): do other fields, e.g. gmail field Message-ID.
           var HEADER_NAMES = ['Subject', 'To', 'Cc', 'Bcc', 'In-Reply-To', 'Message-ID', 'References'];
@@ -153,32 +165,24 @@
       return padModel;
     }
 
+    function onGoogleSignin(oauthToken) {
+      console.log('Signed in with Google:', oauthToken);
+      firebase.authWithOAuthToken("google", oauthToken.access_token, function(error, authData) {
+        if (error) {
+          console.log("Firebase login failed!", error);
+        } else {
+          console.log("Firebase login successful.");
+        }
+      });
+    }
+
     attachUiEvents({
-      signIn: function() {
-        firebase.authWithOAuthPopup("google", function(error, authData) {
-          if (error) {
-            if (error.code === "TRANSPORT_UNAVAILABLE") {
-              // fall-back to browser redirects, and pick up the session
-              // automatically when we come back to the origin page
-              firebase.authWithOAuthRedirect("google", function(error) {
-                console.log("Login Failed!", error);
-              });
-            } else {
-              console.log("Login Failed!", error);
-            }
-          } else {
-            console.log("Authenticated successfully with payload:", authData);
-          }
-        }, {
-          // gmail.compose to send email
-          // gmail.modify to mark send messages as read/archived
-          scope: "email https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.modify"
-        });
-      },
+      signIn: _.bind(gmail.authorize, gmail, onGoogleSignin),
 
       signOut: function() {
+        gapi.auth.signOut();
         firebase.unauth();
-        window.location.reload();
+        //window.location.reload();
       },
 
       newPad: function() {
