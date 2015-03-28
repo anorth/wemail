@@ -2,8 +2,50 @@
  * Google API-related code, e.g. to invoke the GMail api.
  */
 (function() {
+  /**
+   * Client id for authorization; per google admin console.
+   */
+  var CLIENT_ID = '638270974877-c2ss7kkkofab78g9cirjdm5ubgpfoegv.apps.googleusercontent.com';
+
+  /**
+   * Permissions requested from the gapi.
+   */
+  var SCOPE = [
+    'email',
+    'https://www.googleapis.com/auth/gmail.compose',  // to send email
+    'https://www.googleapis.com/auth/gmail.modify'  // to mark sent messages as read/archived
+  ].join(' ');
 
   window.gmail = {
+    /**
+     * Signs the user in to Google for this application.
+     *
+     * @param  {Function} callback Called on auth, takes an OAuth 2.0 token object as param.
+     */
+    authorize: function(callback) {
+      // TODO(adam): Google auth_token expires before firebase, so need to refresh
+      // google token.
+      gapi.auth.authorize({
+        client_id: CLIENT_ID,
+        immediate: false,
+        scope: SCOPE
+      }, callback);
+    },
+
+    /**
+     * Checks if the user is already signed in to Google for this application.
+     *
+     * @param  {Function} callback Called on auth, takes an OAuth 2.0 token object as param.
+     */
+    checkAuth: function(callback) {
+      gapi.auth.authorize({
+        client_id: CLIENT_ID,
+        immediate: true,
+        scope: SCOPE
+      }, callback);
+    },
+
+
     /**
      * Sends an email invite to a collaborator to join the draft.
      *
@@ -14,7 +56,7 @@
      * @param  {Function} onSuccess Function to call on success, with response.
      * @param  {Function} onFailure Function to call on failure, with reason.
      */
-    sendInvite: function (googleAuth, toEmail, padId, onSuccess, onFailure) {
+    sendInvite: function(googleAuth, toEmail, padId, onSuccess, onFailure) {
       var body =
           'Hi - Could you help me drafting an email.\n' +
           'Can you please take a look at https://wemail.firebaseapp.com/#' + padId + ' ?\n' +
@@ -37,14 +79,14 @@
      * @param  {Function} onSuccess Function to call on success, with response.
      * @param  {Function} onFailure Function to call on failure, with reason.
      */
-    sendSimpleEmail: function (googleAuth, toEmail, subject, body, onSuccess, onFailure) {
+    sendSimpleEmail: function(googleAuth, toEmail, subject, body, onSuccess, onFailure) {
       console.log("Sending plain email to " + toEmail + ', subject: "' + subject + '"');
       var headerLines = [
         'To: ' + toEmail,
         'From: ' + formatFromGoogle(googleAuth),
         'Subject: ' + subject
       ];
-      return sendEmailRequest(googleAuth.accessToken, headerLines, body, '', onSuccess, onFailure);
+      return sendEmailRequest(headerLines, body, '', onSuccess, onFailure);
     },
 
     /**
@@ -63,7 +105,7 @@
      * @param {Function} onSuccess Function to call on success, with response.
      * @param {Function} onFailure Function to call on failure, with reason.
      */
-    sendHtmlEmail: function (googleAuth, toRecipients, ccRecipients, bccRecipients,
+    sendHtmlEmail: function(googleAuth, toRecipients, ccRecipients, bccRecipients,
         subject, extraHeaders, bodyHtml, threadId, onSuccess, onFailure) {
       console.log("Sending HTML email to " + toRecipients.join(', ') + ', subject: "' + subject + '"');
       var headerLines = [
@@ -77,13 +119,12 @@
       _.forEach(toRecipients, function(r) {headerLines.push('to: ' + r)});
       _.forEach(ccRecipients, function(r) {headerLines.push('cc: ' + r)});
       _.forEach(bccRecipients, function(r) {headerLines.push('bcc: ' + r)});
-      return sendEmailRequest(googleAuth.accessToken, headerLines, bodyHtml, threadId, onSuccess, onFailure);
+      return sendEmailRequest(headerLines, bodyHtml, threadId, onSuccess, onFailure);
     },
 
     /**
      * Gets the specified draft from the Google REST API.
      *
-     * @param {String} accessToken
      * @param {String} messageId Id of the message to retrieve, as a hex string.
      * @param {Function} onSuccess Function to call on success, with:
      *     @param {String} draftId Draft ID useful for Users.drafts REST calls.
@@ -92,11 +133,11 @@
      *     @param {String} bodyHtml HTML extracted representing the body of the draft.
      * @param {Function} onFailure Function to call on failure, with reason.
      */
-    getDraft: function(accessToken, messageId, onSuccess, onFailure) {
+    getDraft: function(messageId, onSuccess, onFailure) {
       console.log("Retrieving draft message for message id:", messageId);
 
       // First map the message id to a draft id ...
-      return gapiRequest(accessToken, 'GET', 'drafts').then(function(response) {
+      return gapiRequest('GET', 'drafts').then(function(response) {
         // NOTE(adam): assumes that the current draft is in the N most recent drafts.
         // If this assumption is violated, best to cursor back and retrieve more drafts.
         console.log('Gmail drafts.get received: ', response.result);
@@ -116,7 +157,7 @@
         var threadId = draftData.threadId;
 
         // ... then get the contents using the draft id.
-        return gapiRequest(accessToken, 'GET', 'drafts/' + draftId).then(function(response) {
+        return gapiRequest('GET', 'drafts/' + draftId).then(function(response) {
           console.log('Gmail drafts.get(' + draftId + ') received: ', response.result);
           onSuccess(draftId, threadId,
               getDraftHeaders(response.result.message), getDraftBodyHtml(response.result.message));
@@ -129,13 +170,13 @@
 
     /**
      * Deletes the original draft from within Gmail.
-     * @param {String} accessToken
+     *
      * @param {String} draftId Id of the draft to retrieve, as a hex string.
      */
-    deleteDraft: function(accessToken, draftId) {
+    deleteDraft: function(draftId) {
       console.log('Deleting Gmail draft message for id: ' + draftId);
 
-      return gapiRequest(accessToken, 'DELETE', 'drafts/' + draftId).then(function(response) {
+      return gapiRequest('DELETE', 'drafts/' + draftId).then(function(response) {
         console.log('Gmail drafts.delete successful.');
       }, function(reason) {
         console.error('Gmail drafts.delete failed: ', reason);
@@ -151,7 +192,6 @@
    * TODO(adam): rather use the JS lib, if you can figure out how to get auth working
    * https://developers.google.com/gmail/api/v1/reference/users/messages/send#examples
 
-   * @param {String} accessToken
    * @param {String[]} headerLines lines of the form "Header: value"
    * @param {String} body message body
    * @param {String} threadId Gmail thread ID to reply on the same thread as.
@@ -159,7 +199,7 @@
    * @param {Function} onSuccess Function to call on success, with response.
    * @param {Function} onFailure Function to call on failure, with reason.
    */
-  function sendEmailRequest(accessToken, headerLines, body, threadId, onSuccess, onFailure) {
+  function sendEmailRequest(headerLines, body, threadId, onSuccess, onFailure) {
     // NOTE(adam): to make this work, Gmail API needed to be enabled within the developer console:
     // https://console.developers.google.com/project/wemail-dev/apiui/apiview/gmail/usage
     // TODO(adam): if not using gapi more extensively, don't include google's JS,
@@ -173,10 +213,10 @@
     }
 
     console.log("Sending email", headerLines, body);
-    return gapiRequest(accessToken, 'POST', 'messages/send', requestParams).then(function(response) {
+    return gapiRequest('POST', 'messages/send', requestParams).then(function(response) {
       console.log("GMail send succeeded", response);
       var msgId = response.result.id;
-      gapiRequest(accessToken, 'POST', 'messages/'+ msgId + '/modify', {
+      gapiRequest('POST', 'messages/'+ msgId + '/modify', {
         removeLabelIds: ['INBOX', 'UNREAD']
       }).then(function(archiveResponse) {
         console.log("Marked read and archived", archiveResponse)
@@ -193,16 +233,15 @@
   /**
    * Sends an authenticated request to the GMail API.
    *
-   * @param {String} accessToken
    * @param {String} method HTTP method
    * @param {String} path URL path relative to gmail/v1/users/me
    * @param {Object=} body optional request body JSON
    */
-  function gapiRequest(accessToken, method, path, body) {
+  function gapiRequest(method, path, body) {
+    // NOTE(adam): since we use gapi.authorize, Authorization is provided as an HTTP header.
     return gapi.client.request({
       path: 'https://www.googleapis.com/gmail/v1/users/me/' + path,
       method: method,
-      params: {'access_token': accessToken},
       body: body
     });
   }
