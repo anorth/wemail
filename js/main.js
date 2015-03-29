@@ -4,21 +4,17 @@
       "Apr", "May", "Jun", "Jul", "Aug", "Sep",
       "Oct", "Nov", "Dec"];
 
-  function rgbColor(r, g, b) {
-    return 'rgb(' + [r, g, b].join(',') + ')';
-  }
-
   // @see org/waveprotocol/wave/client/doodad/selection/SelectionAnnotationHandler.java
   var COLORS = [
-    rgbColor(252, 146, 41), // Orange
-    rgbColor(81, 209, 63), // Green
-    rgbColor(183, 68, 209), // Purple
-    rgbColor(59, 201, 209), // Cyan
-    rgbColor(209, 59, 69), // Pinky Red
-    rgbColor(70, 95, 230), // Blue
-    rgbColor(244, 27, 219), // Magenta
-    rgbColor(183, 172, 74), // Vomit
-    rgbColor(114, 50, 38) // Poo
+    'rgb(81, 209, 63)', // Green
+    'rgb(252, 146, 41)', // Orange
+    'rgb(183, 68, 209)', // Purple
+    'rgb(59, 201, 209)', // Cyan
+    'rgb(209, 59, 69)', // Pinky Red
+    'rgb(70, 95, 230)', // Blue
+    'rgb(244, 27, 219)', // Magenta
+    'rgb(183, 172, 74)', // Vomit
+    'rgb(114, 50, 38)' // Poo
   ];
 
   /////
@@ -368,6 +364,16 @@
           var color = obj.color || '#666';
           return '<span style="color: ' + color + ';">● </span>' + label;
         });
+    padModel.onCollaboratorsChanged(function(collaborators) {
+      var i = 0;
+      _.each(collaborators, function(collaborator, key) {
+        if (key === authData.uid) {
+          padModel.setMyCollaboratorProfile(authData.google.email, authData.google.displayName,
+              COLORS[i % COLORS.length]);
+        }
+        ++i;
+      })
+    });
 
     padModel.setMyCollaboratorProfile(authData.google.email, authData.google.displayName);
     padModel.removeInvitedEmail(authData.google.email);

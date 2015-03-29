@@ -103,8 +103,13 @@
         fbutil.onChanged(headersRef.child(headerName.toLowerCase()), callback);
       },
 
-      setMyCollaboratorProfile: function (email, displayName) {
-        usersRef.child(padRef.getAuth().uid).update({email: email, displayName: displayName});
+      setMyCollaboratorProfile: function (email, displayName, color) {
+        var up = {
+          email: email,
+          displayName: displayName
+        };
+        if (!!color) { up.color = color; }
+        usersRef.child(padRef.getAuth().uid).update(up);
       },
 
       collaborators: function (callback) {
