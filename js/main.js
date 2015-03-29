@@ -124,14 +124,29 @@
     function openPad(padId, authData) {
       authData = authData || firebase.getAuth();
       if (padId === 'new') { padId = null; }
-
       if (!!padModel && padModel.id === padId) { return; }
+
+      if (!!padModel) { padModel.unbind(); }
+      if (!!firepad) {
+        firepad.setUserColor(null);
+        firepad.dispose();
+      }
+
       console.log("Opening pad " + (padId || "[new]"));
       padModel = rootModel.pad(padId, authData.uid);
       window.location.hash = padModel.id;
 
       initCollaboration(authData, padModel);
       firepad = initFirepad(authData.uid, rootModel.refForPad(padModel.id));
+
+      firepad.on('ready', function() {
+        // Set collaborator info after Firepad has initialized else it trashes color
+        padModel.setMe(authData.google.email, authData.google.displayName);
+        padModel.removeInvitedEmail(authData.google.email);
+        //padModel.me(function(me) {
+        //  firepad.setUserColor(me.color);
+        //});
+      });
 
       // Remember this pad for the user.
       // Currently, this is the only way a pad ends up in a user's list; they have to visit it
@@ -364,19 +379,6 @@
           var color = obj.color || '#666';
           return '<span style="color: ' + color + ';">● </span>' + label;
         });
-    padModel.onCollaboratorsChanged(function(collaborators) {
-      var i = 0;
-      _.each(collaborators, function(collaborator, key) {
-        if (key === authData.uid) {
-          padModel.setMyCollaboratorProfile(authData.google.email, authData.google.displayName,
-              COLORS[i % COLORS.length]);
-        }
-        ++i;
-      })
-    });
-
-    padModel.setMyCollaboratorProfile(authData.google.email, authData.google.displayName);
-    padModel.removeInvitedEmail(authData.google.email);
 
     // Chat
     var chatContainer = document.getElementById('chat-container');
@@ -403,14 +405,13 @@
   }
 
   function initFirepad(userId, padRef) {
-    if (!!firepad) { firepad.dispose(); }
     var padEl = document.getElementById('firepad');
     padEl.innerHTML = '';
 
     var codeMirror = CodeMirror(padEl, {lineWrapping: true});
-    // TODO(alex): add userColor opt so we can choose better colors
     var firepad = Firepad.fromCodeMirror(padRef, codeMirror, {
       userId: userId,
+      userColor: null, // We'll set color later
       richTextShortcuts: true,
       richTextToolbar: true,
       defaultText: ''

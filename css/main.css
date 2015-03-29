@@ -150,6 +150,7 @@ a.powered-by-firepad {
 }
 
 #rightpanel h2 {
+  flex: 0 0 20px;
   margin: 0 0 0 0;
   padding-left: 6px;
   font-size: 14px;
@@ -157,7 +158,7 @@ a.powered-by-firepad {
 }
 
 #collaborators-wrapper {
-  flex: 0 0 60px;
+  flex: 0 0 68px;
   overflow-y: scroll;
   overflow-x: hidden;
 }
