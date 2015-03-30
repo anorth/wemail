@@ -4,19 +4,6 @@
       "Apr", "May", "Jun", "Jul", "Aug", "Sep",
       "Oct", "Nov", "Dec"];
 
-  // @see org/waveprotocol/wave/client/doodad/selection/SelectionAnnotationHandler.java
-  var COLORS = [
-    'rgb(81, 209, 63)', // Green
-    'rgb(252, 146, 41)', // Orange
-    'rgb(183, 68, 209)', // Purple
-    'rgb(59, 201, 209)', // Cyan
-    'rgb(209, 59, 69)', // Pinky Red
-    'rgb(70, 95, 230)', // Blue
-    'rgb(244, 27, 219)', // Magenta
-    'rgb(183, 172, 74)', // Vomit
-    'rgb(114, 50, 38)' // Poo
-  ];
-
   /////
   ///// Main
   /////
@@ -143,9 +130,6 @@
         // Set collaborator info after Firepad has initialized else it trashes color
         padModel.setMe(authData.google.email, authData.google.displayName);
         padModel.removeInvitedEmail(authData.google.email);
-        //padModel.me(function(me) {
-        //  firepad.setUserColor(me.color);
-        //});
       });
 
       // Remember this pad for the user.
