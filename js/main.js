@@ -401,8 +401,10 @@
       defaultText: ''
     });
 
+    showSpinner(true);
     firepad.on('ready', function() {
       firepad.ready = true;
+      showSpinner(false);
       console.log("Firepad ready");
     });
     firepad.on('synced', function() { console.log("Firepad synced"); });
@@ -453,6 +455,11 @@
       });
       listElt.innerHTML = html;
     });
+  }
+
+  function showSpinner(show) {
+    var className = !!show ? '' : 'hidden';
+    document.getElementById('spinner-container').className = className;
   }
 
   function splitEmailAddresses(addresseeLine) {
