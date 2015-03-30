@@ -401,6 +401,39 @@
       defaultText: ''
     });
 
+    // Fix copy/paste behaviour, dapted from
+    // https://github.com/iclems/javascriptcore-firebase/blob/master/JavaScriptCore%2BFirebaseJS/panelText.html
+    // and https://gist.github.com/iclems/31b44bb7aba9bf7713a8
+    var MIME_TYPE = {
+      PLAIN: 'text/plain',
+      HTML: window.clipboardData ? 'Text' : 'text/html'
+    };
+    var LineSentinelCharacter = '\uE000';
+    var EntitySentinelCharacter = '\uE001';
+    firepad.codeMirror_.getInputField().addEventListener('copy', function(e) {
+      var input = firepad.codeMirror_.getInputField();
+      var copyText = input.value.replace(new RegExp('['+LineSentinelCharacter+EntitySentinelCharacter+']', 'g'), '');
+      selectInput(input);
+      if (e.clipboardData && e.clipboardData.setData) {
+        e.preventDefault();
+        e.clipboardData.setData(MIME_TYPE.PLAIN, copyText);
+        e.clipboardData.setData(MIME_TYPE.HTML, firepad.getHtmlFromSelection());
+        return false;
+      }
+    });
+
+    firepad.codeMirror_.getInputField().addEventListener('paste', function(e) {
+      if (e.clipboardData && e.clipboardData.getData) {
+        var html = e.clipboardData.getData(MIME_TYPE.HTML);
+        if (!!html) {
+          firepad.codeMirror_.replaceSelection('');
+          firepad.insertHtmlAtCursor(html);
+          e.preventDefault();
+          return false;
+        }
+      }
+    });
+
     showSpinner(true);
     firepad.on('ready', function() {
       firepad.ready = true;
@@ -467,6 +500,19 @@
       return _.filter(addresseeLine.split(/[,;] */), _.identity);
     }
     return [];
+  }
+
+  // From https://gist.github.com/iclems/31b44bb7aba9bf7713a8
+  function selectInput(node) {
+    var ios = /AppleWebKit/.test(navigator.userAgent) && /Mobile\/\w+/.test(navigator.userAgent);
+    if (ios) { // Mobile Safari apparently has a bug where select() is broken.
+      node.selectionStart = 0;
+      node.selectionEnd = node.value.length;
+    } else {
+      // Suppress mysterious IE10 errors
+      try { node.select(); }
+      catch(_e) {}
+    }
   }
 
   window.main = main;
