@@ -17,7 +17,7 @@
     var firepad;
 
     // Google cookie doesn't actually get wiped, so we're technically always still logged in.
-    // ... but take advantage of the fact that we signed our from firebase.
+    // ... but take advantage of the fact that we signed out from firebase.
     if (firebase.getAuth()) {
       // Since the Google token expires after 1 hr, get a new one:
       gmail.checkAuth(function(response) {
@@ -122,6 +122,8 @@
 
     function openPad(padId, authData) {
       authData = authData || firebase.getAuth();
+      if (!authData) { return; }
+
       if (padId === 'new') { padId = null; }
       if (!!padModel && padModel.id === padId) { return; }
 
@@ -180,9 +182,8 @@
       signIn: _.bind(gmail.authorize, gmail, onGoogleSignin),
 
       signOut: function() {
-        gapi.auth.signOut();
+        gapi.auth.signOut();  // warning, no-op, see https://code.google.com/p/google-plus-platform/issues/detail?id=976
         firebase.unauth();
-        //window.location.reload();
       },
 
       newPad: function() {

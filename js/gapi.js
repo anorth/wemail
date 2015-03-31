@@ -23,8 +23,8 @@
      * @param  {Function} callback Called on auth, takes an OAuth 2.0 token object as param.
      */
     authorize: function(callback) {
-      // TODO(adam): Google auth_token expires before firebase, so need to refresh
-      // google token.
+      // NOTE(adam): google access_token can expire if page is left open for >1hr;
+      // this is not a problem if the page is reloaded in the interim.
       gapi.auth.authorize({
         client_id: CLIENT_ID,
         immediate: false,
