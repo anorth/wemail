@@ -39,6 +39,7 @@
         bindUserData(userModel);
 
         hashChanged();
+        maybeLoadDraft();
       } else {
         console.log("Signed out");
         signedOut();
@@ -50,39 +51,18 @@
     window.addEventListener('message', function(event) {
       // TODO(adam): enforce origin of message, to avoid evil extensions sending messages here.
       //console.log('Message received from extension:', event.data, event);
-      var data = event.data;
 
-      // Assumes that this tab was opened to a new wemail message, e.g. with #new
-      if (data.draftId) {
-        console.log('Initializing draft for draftId:', data.draftId);
-        var messageId = data.draftId;
+      if (!event.data.draftId) {
+        return;
+      }
 
-        gmail.getDraft(messageId, function(draftId, threadId, headers, bodyHtml) {
-          // Populate the headers from the draft data.
-          // TODO(adam): do other fields, e.g. gmail field Message-ID.
-          var HEADER_NAMES = ['Subject', 'To', 'Cc', 'Bcc', 'In-Reply-To', 'Message-ID', 'References'];
-          console.log('got draft headers:', headers);
-          _.each(HEADER_NAMES, function(headerName) {
-            if (headerName in headers) {
-              padModel.setHeader(headerName.toLowerCase(), headers[headerName]);
-              console.log('setting model header ' + headerName + ' to ' + headers[headerName]);
-            }
-          });
-
-          // Hang on to the draft id so we can delete the Gmail copy after sending.
-          padModel.setHeader('gmail-draft-id', draftId);
-          // Also hang on to the thread id so the draft gets set on the correct thread.
-          padModel.setHeader('thread-id', threadId);
-
-          // Populate the body from the draft data.
-          if (firepad.ready) {  // poor man's async.join()
-            firepad.setHtml(bodyHtml);
-          } else {
-            firepad.on('ready', _.bind(firepad.setHtml, firepad, bodyHtml));
-          }
-        }, function(response) {
-          // failure
-        });
+      var draftId = event.data.draftId;
+      if (gapi.auth.getToken()) {
+        loadDraft(draftId);
+      } else {
+        console.log('Remembering draft ID ' + draftId + ' for when Google is signed in');
+        window.localStorage.setItem('wemail.draftId', draftId);
+        window.localStorage.setItem('wemail.draftIdTimestamp', Date.now());
       }
     });
 
@@ -96,6 +76,59 @@
           openPad(padId, firebase.getAuth());
         });
       }
+    }
+
+
+    /**
+     * If a gmail draft ID was stored before sign in, load the draft now that we're signed in.
+     */
+    function maybeLoadDraft() {
+      if (!gapi.auth.getToken()) { return; }  // Google not yet signed in
+
+      var draftId = window.localStorage.getItem('wemail.draftId');
+      var draftIdTimestamp = window.localStorage.getItem('wemail.draftIdTimestamp');
+      if (!!draftId) {
+        if (Date.now() - draftIdTimestamp < 10*60*1000) {
+          loadDraft(draftId);
+        }
+        window.localStorage.removeItem('wemail.draftId');
+        window.localStorage.removeItem('wemail.draftIdTimestamp');
+      }
+    }
+
+
+    /**
+     * Loads a draft from Gmail with the given message ID.
+     */
+    function loadDraft(messageId) {
+      // Assumes that this tab was opened to a new wemail message, e.g. with #new
+      console.log('Initializing draft for draftId:', messageId);
+
+      gmail.getDraft(messageId, function(draftId, threadId, headers, bodyHtml) {
+        // Populate the headers from the draft data.
+        var HEADER_NAMES = ['Subject', 'To', 'Cc', 'Bcc', 'In-Reply-To', 'Message-ID', 'References'];
+        console.log('got draft headers:', headers);
+        _.each(HEADER_NAMES, function(headerName) {
+          if (headerName in headers) {
+            padModel.setHeader(headerName.toLowerCase(), headers[headerName]);
+            console.log('setting model header ' + headerName + ' to ' + headers[headerName]);
+          }
+        });
+
+        // Hang on to the draft id so we can delete the Gmail copy after sending.
+        padModel.setHeader('gmail-draft-id', draftId);
+        // Also hang on to the thread id so the draft gets set on the correct thread.
+        padModel.setHeader('thread-id', threadId);
+
+        // Populate the body from the draft data.
+        if (firepad.ready) {  // poor man's async.join()
+          firepad.setHtml(bodyHtml);
+        } else {
+          firepad.on('ready', _.bind(firepad.setHtml, firepad, bodyHtml));
+        }
+      }, function(response) {
+        // failure
+      });
     }
 
     /**
