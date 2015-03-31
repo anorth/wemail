@@ -1,0 +1,64 @@
+{
+  "rules": {
+    // User account information.
+    "users": {
+      "$uid": {
+        // Read and write access for the owner of this user account, uid exactly matching the key ($uid)
+        ".write": "auth !== null && auth.uid === $uid",
+        ".read": "auth !== null && auth.uid === $uid",
+        // List of pads shared with the user. This isn't directly used for access control.
+        "pads": {
+          "$pad_id": {
+            // Allow pad owner to write (retract) their pad object for all collaborators.
+            ".write": "root.child($pad_id).child('owner').val() === auth.uid || root.child($pad_id).child('owner').val() === null"
+          }
+        }
+      }
+    },
+    // Shared drafts & chat
+    "pads": {
+      "$pad_id": {
+        // Allow pad owner to delete the entire thing.
+        ".write": "(data.child('owner').val() === auth.uid || data.child('owner').val() === null) && newData.val() === null",
+        // The pad owner's id , write-once
+        "owner": {".read": true, ".write": "data.val() === null && newData.val() === auth.uid"},
+        // Collaborators can read/write headers and invite new collaborators.
+        // FIXME(alex): Restrict access to collaborators
+        "headers": {".read": true, ".write": true},
+        "invited": {".read": true, ".write": true},
+        // Per-user state: name, cursor etc. Writable by that user.
+        // FIXME(alex): Restrict access to collaborators
+        "users": {
+          ".read": true,
+          "$uid": {
+            ".write": "auth !== null && auth.uid === $uid" // user can write their own record
+          }
+        },
+        // Chat messages. Collaborators can read, write only if recording their own user id.
+        // FIXME(alex): Restrict access to collaborators
+        "chat": {
+          ".read": true,
+          "$msg_id": {
+            ".write": "auth.uid === newData.child('userId').val()"
+          }
+        },
+        // History. Collaborators can read/write, but not overwrite/delete.
+        // FIXME(alex): Restrict access to collaborators
+        "history": {
+          ".read": true,
+          "$revision": {
+            /* Prevent overwriting existing revisions. */
+            ".write": "data.val() === null"
+          }
+        },
+        // Snapshots. Collaborators can read, write, only if they are author of revision being checkpointed.
+        // FIXME(alex): Restrict access to collaborators
+        "checkpoint":  {
+          ".read": true,
+          ".write": "root.child($pad_id).child('history').child(newData.child('id').val()).child('a').val() === newData.child('a').val()",
+          ".validate": "newData.hasChildren(['a', 'o', 'id'])"
+        }
+      }
+    }
+  }
+}

@@ -1,6 +1,7 @@
 {
   "firebase": "wemail",
   "public": ".",
+  "rules": "rules.json",
   "ignore": [
     "firebase.json",
     "**/.*",
