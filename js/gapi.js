@@ -282,8 +282,32 @@
    * @returns {String} HTML body of the email.
    */
   function getDraftBodyHtml(message) {
-    // HACK(adam): can't assume 'text/html' exists and is the 2nd part.
-    return b64ToUtf8(message.payload.parts[1].body.data);
+    return b64ToUtf8(getContentPart(message.payload).body.data);
+  }
+
+  /**
+   * Recursively locates the best part of the multipart email to use as the email body.
+   * @returns  {Object|null} The content part, or null if no content part is within the tree.
+   */
+  function getContentPart(rootPart) {
+    // TODO(adam): fantastic candidate for a unit test.
+
+    // Find a multipart/alternative part, and take its last part (highest priority).
+    // Per: http://en.wikipedia.org/wiki/MIME#Alternative
+    if (rootPart.mimeType == 'multipart/alternative') {
+      return _.last(rootPart.parts);
+    } else if (rootPart.mimeType == 'text/html') {
+      // shouldn't get here if part of a multipart/alternative, but just in case.
+      return rootPart;
+    }
+
+    for (var partId in rootPart.parts) {
+      var contentPart = getContentPart(rootPart.parts[partId]);
+      if (contentPart) {
+        return contentPart;
+      }
+    }
+    return null;
   }
 
   /**
