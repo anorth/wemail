@@ -90,6 +90,12 @@
     var invitedRef = padRef.child('invited');
     var headersRef = padRef.child('headers');
 
+    // Escapes an email address in a way that can also be executed in Firebase security rules,
+    // i.e. only using replace(). https://www.firebase.com/docs/security/api/
+    function escapeEmail(emailAddress) {
+      return (emailAddress || '').replace(/\./g, '%56');
+    }
+
     function setMeMetadata() {
       var uid = padRef.getAuth().uid;
       var me = usersRef.child(uid);
@@ -162,11 +168,11 @@
       },
 
       addInvitedEmail: function(emailAddress, onsuccess) {
-        fbutil.arraySetAdd(invitedRef, emailAddress, onsuccess);
+        invitedRef.child(escapeEmail(emailAddress)).setWithPriority(emailAddress, Date.now(), onsuccess);
       },
 
       removeInvitedEmail: function(emailAddress) {
-        fbutil.arraySetRemove(invitedRef, emailAddress);
+        invitedRef.child(escapeEmail(emailAddress)).remove();
       },
 
       onInvitedChanged: function(callback) {
