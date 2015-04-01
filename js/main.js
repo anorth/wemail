@@ -9,6 +9,8 @@
   /////
 
   function main() {
+    Bugsense.initAndStartSession( { apiKey: (window.location.hostname == 'localhost') ? "6e92a61d" : "f837bbea" } );
+
     console.log('Initializing firebase.');
     var firebase = new Firebase("https://wemail.firebaseio.com/");
     var rootModel = model.createRootModel(firebase);
