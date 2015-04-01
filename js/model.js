@@ -115,6 +115,18 @@
           ++i;
         });
       });
+
+      // Migrate invitation list schema. Added 1/4/2015 (pre-launch).
+      invitedRef.once('value', function(snap) {
+        var val = snap.val();
+        for (var i = 0; !!val[i]; ++i) {
+          (function(index) {
+            invitedRef.child(escapeEmail(val[index])).setWithPriority(val[index], Date.now(), function() {
+              invitedRef.child(index).remove();
+            });
+          })(i);
+        }
+      });
     }
 
     return {
