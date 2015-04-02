@@ -20,12 +20,14 @@
     console.log("Query params", queryParams);
   })();
 
+  var isDev = window.location.hostname === 'localhost';
+
   /////
   ///// Main
   /////
 
   function main() {
-    Bugsense.initAndStartSession( { apiKey: (window.location.hostname == 'localhost') ? "6e92a61d" : "f837bbea" } );
+    Bugsense.initAndStartSession( { apiKey: isDev ? "6e92a61d" : "f837bbea" } );
 
     console.log('Initializing firebase.');
     var firebase = new Firebase("https://wemail.firebaseio.com/");
@@ -34,6 +36,9 @@
     var padModel;
     var firepad;
 
+    var initiallySignedIn = !!firebase.getAuth();
+    var recordedSessionStart = false;
+
     // Google cookie doesn't actually get wiped, so we're technically always still logged in.
     // ... but take advantage of the fact that we signed out from firebase.
     if (firebase.getAuth()) {
@@ -41,6 +46,7 @@
       gmail.checkAuth(function(response) {
         if (response.error) {
           console.log('User not already signed in with Google.');
+          track('Google auth expired');
         } else {
           // Update the firebase auth with the new Google token:
           onGoogleSignin(response);
@@ -51,6 +57,9 @@
     firebase.onAuth(function (authData) {
       if (authData != null) {
         console.log("Signed in " + authData.uid);
+        if (!initiallySignedIn) {
+          track('Signed in');
+        }
         signedIn(authData);
 
         userModel = rootModel.user(authData.uid);
@@ -60,7 +69,12 @@
         maybeLoadDraft();
       } else {
         console.log("Signed out");
+        track('Signed out')
         signedOut();
+      }
+      if (!recordedSessionStart) {
+        track('Session started', {'Authenticated': authData != null});
+        recordedSessionStart = true;
       }
     });
 
@@ -69,11 +83,11 @@
     window.addEventListener('message', function(event) {
       // TODO(adam): enforce origin of message, to avoid evil extensions sending messages here.
       //console.log('Message received from extension:', event.data, event);
-
       if (!event.data.draftId) {
         return;
       }
 
+      track('GMail draft requested');
       var draftId = event.data.draftId;
       if (gapi.auth.getToken()) {
         loadDraft(draftId);
@@ -123,6 +137,7 @@
       console.log('Initializing draft for draftId:', messageId);
 
       gmail.getDraft(messageId, function(draftId, threadId, headers, bodyHtml) {
+        track('GMail draft loaded');
         // Populate the headers from the draft data.
         var HEADER_NAMES = ['Subject', 'To', 'Cc', 'Bcc', 'In-Reply-To', 'Message-ID', 'References'];
         console.log('got draft headers:', headers);
@@ -145,6 +160,7 @@
           firepad.on('ready', _.bind(firepad.setHtml, firepad, bodyHtml));
         }
       }, function(response) {
+        track('GMail draft load failed');
         // failure
       });
     }
@@ -213,8 +229,9 @@
         }
       });
 
-      // Migration to ensure pads have owners: first viewer wins.
       padModel.owner(function(owner) {
+        track('Draft opened', {'New': !padId, 'Owned': owner === authData.uid});
+        // Migration to ensure pads have owners: first viewer wins.
         if (owner == null) { padModel.setOwner(authData.uid); }
       });
 
@@ -223,6 +240,30 @@
       });
 
       return padModel;
+    }
+
+    function deletePad(authData) {
+      padModel.owner(function(owner) {
+        if (owner === authData.uid || owner == null) {
+          console.log("Retracting and deleting pad " + padModel.id);
+          padModel.collaborators(function(collaborators) {
+            _.forOwn(collaborators, function(val, uid) {
+              //if (uid == authData.uid) {
+              //  userModel.forgetPad(padModel.id)
+              //} else {
+              rootModel.user(uid).forgetPad(padModel.id);
+              //}
+            });
+            padModel.remove(); // Observer will see and refresh location.hash
+          });
+
+        } else {
+          console.log("Forgetting reference to non-owned pad " + padModel.id);
+          padModel.removeCollaborator(authData.uid);
+          userModel.forgetPad(padModel.id);
+          window.location.hash = '';
+        }
+      });
     }
 
     function onGoogleSignin(oauthToken) {
@@ -236,52 +277,42 @@
       });
     }
 
+    function signOut() {
+      gapi.auth.signOut();  // warning, no-op, see https://code.google.com/p/google-plus-platform/issues/detail?id=976
+      firebase.unauth();
+    }
+
     attachUiEvents({
-      signIn: _.bind(gmail.authorize, gmail, onGoogleSignin),
+      signIn: function() {
+        gmail.authorize(onGoogleSignin);
+        track('Sign-in clicked');
+
+      },
 
       signOut: function() {
-        gapi.auth.signOut();  // warning, no-op, see https://code.google.com/p/google-plus-platform/issues/detail?id=976
-        firebase.unauth();
+        track('Sign-out clicked');
+        signOut();
       },
 
       newPad: function() {
+        track('Draft new clicked');
         openPad(null);
       },
 
       deletePad: function() {
-        var authData = firebase.getAuth();
-        padModel.owner(function(owner) {
-          if (owner === authData.uid || owner == null) {
-            console.log("Retracting and deleting pad " + padModel.id);
-            padModel.collaborators(function(collaborators) {
-              _.forOwn(collaborators, function(val, uid) {
-                //if (uid == authData.uid) {
-                //  userModel.forgetPad(padModel.id)
-                //} else {
-                  rootModel.user(uid).forgetPad(padModel.id);
-                //}
-              });
-              padModel.remove(); // Observer will see and refresh location.hash
-            });
-
-          } else {
-            console.log("Forgetting reference to non-owned pad " + padModel.id);
-            padModel.removeCollaborator(authData.uid);
-            userModel.forgetPad(padModel.id);
-            window.location.hash = '';
-          }
-        });
+        track('Draft delete clicked');
+        deletePad(firebase.getAuth());
       },
 
       sendEmail: function(onSuccess, onFailure) {
         var body = firepad.getHtml();
-        var googleAuth = firebase.getAuth().google;
+        var authData = firebase.getAuth();
+        var googleAuth = authData.google;
 
         // TODO(alex): Replace nested callbacks with a promise chain
         padModel.headers(function (headers) {
           padModel.collaborators(function (collaborators) {
             // TODO(alex): Validate addressees, content
-            // TODO(alex): BCC collaborators
             var toRecipients = splitEmailAddresses(headers['to']);
             var ccRecipients = splitEmailAddresses(headers['cc']);
             var bccRecipients = splitEmailAddresses(headers['bcc']);
@@ -290,10 +321,21 @@
               'Message-ID': headers['message-id'],
               'References': headers['references']
             };
+            var threadId = headers['thread-id'];
             _.forEach(collaborators, function(collaborator) {
               if (!!collaborator.email && collaborator.email !== googleAuth.email) {
                 bccRecipients.push(collaborator.email);
               }
+            });
+            track('Email send clicked', {
+              'To': toRecipients.length,
+              'Cc': ccRecipients.length,
+              'Bcc': bccRecipients.length,
+              'Collaborators': _.size(collaborators),
+              'Has Thread-Id': !!threadId,
+              'Has In-Reply-To': !!headers['in-reply-to'],
+              'Body Length': body.length
+
             });
             gmail.sendHtmlEmail(googleAuth,
                 toRecipients,
@@ -302,9 +344,10 @@
                 headers['subject'],
                 extraHeaders,
                 body,
-                headers['thread-id'],
+                threadId,
                 function (success) {
                   console.log("Mail was sent!");
+                  track('Email send succeeded');
 
                   // TODO(adam): consider using the chrome extension to refresh the UI, as the
                   // deleted draft still appears.
@@ -313,9 +356,12 @@
                   }
 
                   onSuccess(success);
+                  deletePad(authData);
                 }, function (reason) {
                   console.log("Failed to send :-(");
+                  track('Email send failed');
                   onFailure(reason);
+                  signOut();
                 });
           });
         });
@@ -341,12 +387,10 @@
         alert('Sent!');
         button.disabled = false;
         button.value = oldTitle;
-        handlers.deletePad();
       }, function(e) {
         button.disabled = false;
         button.value = oldTitle;
         alert('Send failed. Please sign in to try again.');
-        handlers.signOut();
         // TODO(alex): Display failures to user
       });
     };
@@ -407,6 +451,7 @@
       if (!!email) {
         padModel.addInvitedEmail(email, function() {
           padModel.accessToken(function(token) {
+            track('Invitation sent');
             gmail.sendInvite(authData.google, email, padModel.id, token, function(response) {
               console.log('Invitation sent to ' + email + '.');
             }, function(reason) {
@@ -436,6 +481,7 @@
     document.getElementById('chat-send').onclick = function() {
       var input = document.getElementById('chat-input');
       if (!!input.value) {
+        track('Chat sent');
         padModel.sendChat(authData.uid, authData.google.displayName, input.value);
         input.value = '';
       }
@@ -478,6 +524,7 @@
     var LineSentinelCharacter = '\uE000';
     var EntitySentinelCharacter = '\uE001';
     firepad.codeMirror_.getInputField().addEventListener('copy', function(e) {
+      track('Draft content copied');
       var input = firepad.codeMirror_.getInputField();
       var copyText = input.value.replace(new RegExp('['+LineSentinelCharacter+EntitySentinelCharacter+']', 'g'), '');
       selectInput(input);
@@ -490,6 +537,7 @@
     });
 
     firepad.codeMirror_.getInputField().addEventListener('paste', function(e) {
+      track('Draft content pasted');
       if (e.clipboardData && e.clipboardData.getData) {
         var html = e.clipboardData.getData(MIME_TYPE.HTML);
         if (!!html) {
@@ -579,6 +627,14 @@
       // Suppress mysterious IE10 errors
       try { node.select(); }
       catch(_e) {}
+    }
+  }
+
+  function track(event, properties) {
+    if (!isDev) {
+      mixpanel.track(event, properties);
+    } else {
+      console.log("Track: " + event, properties);
     }
   }
 
