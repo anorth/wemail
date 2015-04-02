@@ -1,25 +1,16 @@
-TODO(adam): push firebase app down a dir, so chromeext and firebase co-exist.
-
-# weMail
+# WeMail
 
 Draft emails together.
 
-## Setup
+## Components
 
-It all runs without a server. Marvel at the magic!
+WeMail consists of the following components. See their READMEs for instructions.
 
-Run a lightweight web server, e.g.:
+1. **Web site**. (see: `web/README.md`) The web UI from which a user edits their draft and invites others to collaborate.
+2. **Chrome extension**. (see: `chromeext/README.md`) Chrome extension which provides a "Share Draft" button directly from within the Gmail compose window.
 
-    $ python -m SimpleHTTPServer
+## Useful links
 
-and open http://localhost:8000
-
-(Note: firebase does not work with file:/// protocol addresses)
-
-## Deployment
-
-To deploy to https://wemail.firebaseapp.com:
-
-    $ firebase deploy
-
-See https://www.firebase.com/docs/hosting/quickstart.html for more info.
+- Task Tracking: https://app.asana.com/0/30260233033247
+- Google Developers Console: https://console.developers.google.com/project/wemail-dev
+- Firebase: https://wemail.firebaseio.com/
