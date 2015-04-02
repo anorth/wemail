@@ -58,10 +58,10 @@
      * @param  {Function} onSuccess Function to call on success, with response.
      * @param  {Function} onFailure Function to call on failure, with reason.
      */
-    sendInvite: function(googleAuth, toEmail, padId, onSuccess, onFailure) {
+    sendInvite: function(googleAuth, toEmail, padId, token, onSuccess, onFailure) {
       var body =
           'Hi - Could you help me drafting an email.\n' +
-          'Can you please take a look at https://wemail.firebaseapp.com/#' + padId + ' ?\n' +
+          'Can you please take a look at https://wemail.firebaseapp.com/?token=' + token + '#' + padId + ' ?\n' +
           '\n' +
           'Thanks!';
 

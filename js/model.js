@@ -2,9 +2,9 @@
  * Data models and Firebase.
  */
 (function() {
-  var SUBJECT_MONTHS = ["January", "February", "March",
-    "April", "May", "June", "July", "August", "September",
-    "October", "November", "December"];
+  var SUBJECT_MONTHS = ['January', 'February', 'March',
+    'April', 'May', 'June', 'July', 'August', 'September',
+    'October', 'November', 'December'];
 
   // @see org/waveprotocol/wave/client/doodad/selection/SelectionAnnotationHandler.java
   var COLORS = [
@@ -36,8 +36,8 @@
         var padModel = createPadModel(this.refForPad(padId, userId));
         if (!padId) {
           var now = new Date();
-          var dateStr = now.getDate() + '-' + SUBJECT_MONTHS[now.getMonth()] + "-" + now.getFullYear();
-          padModel.setHeader('subject', "Draft email " + dateStr);
+          var dateStr = now.getDate() + '-' + SUBJECT_MONTHS[now.getMonth()] + '-' + now.getFullYear();
+          padModel.setHeader('subject', 'Draft email ' + dateStr);
         }
         return padModel;
       },
@@ -47,10 +47,12 @@
           return padsRef.child(padId);
         } else {
           if (!userId) {
-            throw "User id required for new pad";
+            throw 'User id required for new pad';
           }
           var ref = padsRef.push();
-          ref.update({owner: userId});
+          var token = randomString(22);
+          ref.update({owner: userId, accesstoken: token});
+          ref.child('users').child(userId).set({accesstoken: token});
           return ref;
         }
       },
@@ -66,7 +68,7 @@
 
     return {
       rememberPad: function(padId, subject) {
-        padsRef.child(padId).set({subject: subject || ""});
+        padsRef.child(padId).set({subject: subject || ''});
       },
 
       getPads: function(callback) {
@@ -144,6 +146,10 @@
         padRef.child('owner').set(userId);
       },
 
+      accessToken: function(callback) {
+        fbutil.once(padRef.child('accesstoken'), callback);
+      },
+
       headers: function(callback) {
         fbutil.once(headersRef, callback);
       },
@@ -160,11 +166,14 @@
         fbutil.once(usersRef.child(padRef.getAuth().uid), callback);
       },
 
-      setMe: function(email, displayName, onComplete) {
-        usersRef.child(padRef.getAuth().uid).update({
+      // Access token is necessary for the first write.
+      setMe: function(email, displayName, accessToken, onComplete) {
+        var update = {
           email: email,
           displayName: displayName
-        }, onComplete);
+        };
+        if (!!accessToken) { update.accesstoken = accessToken; }
+        usersRef.child(padRef.getAuth().uid).update(update, onComplete);
         setMeMetadata();
       },
 
@@ -211,7 +220,7 @@
 
       onRemoved: function(callback) {
         padRef.child('owner').on('value', function(snapshot) {
-          //console.log("Owner: ", snapshot.val());
+          //console.log('Owner: ', snapshot.val());
           if (snapshot.val() == null) {
             callback();
           }
@@ -224,5 +233,16 @@
         padRef.off();
       }
     };
+  }
+
+  function randomString(length) {
+    length = length || 12;
+    var charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    var chars = [];
+    for (var i = 0; i < length; i++) {
+      var idx = Math.floor(Math.random() * charset.length);
+      chars.push(charset.substring(idx,idx+1));
+    }
+    return chars.join('');
   }
 })();

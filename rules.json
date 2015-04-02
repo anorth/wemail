@@ -21,21 +21,26 @@
         // Allow pad owner to delete the entire thing.
         ".write": "newData.val() === null && (data.child('owner').val() === auth.uid || data.child('owner').val() === null)",
 
-        // Per-user state: name, cursor etc. Writable by that user.
-        // A record here implies that the user is a collaborator.
-        // FIXME(alex): Restrict write access to invited users
-        "users": {
-          ".read": "data.parent().child('users/'+auth.uid).exists()",
-          "$uid": {
-            ".write": "auth.uid === $uid" // user can write their own record
-          }
-        },
-
         // The pad owner's id, write-once by anyone. Readable by collaborators.
         "owner": {
           ".read":  "data.parent().child('users/'+auth.uid).exists()",
           ".write": "!data.exists() && newData.val() === auth.uid"
         },
+        // Pad access token, write-once, readable by collaborators
+        "accesstoken": {
+          ".read":  "data.parent().child('users/'+auth.uid).exists()",
+          ".write": "!data.exists() && newData.exists()"
+        },
+        // Per-user state: name, cursor etc. Writable by that user.
+        // A record here implies that the user is a collaborator.
+        "users": {
+          ".read": "data.parent().child('users/'+auth.uid).exists()",
+          "$uid": {
+            // User can write their own record if it exists or they present the access token
+            ".write": "auth.uid === $uid && (data.exists() || newData.child('accesstoken').val() === data.parent().parent().child('accesstoken').val())"
+          }
+        },
+
         // Collaborators can read/write headers.
         "headers": {
           ".read":  "data.parent().child('users/'+auth.uid).exists()",

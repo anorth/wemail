@@ -188,20 +188,21 @@
       padModel = rootModel.pad(padId, authData.uid);
       window.location.hash = padModel.id;
 
-      padModel.setMe(authData.google.email, authData.google.displayName, function(err) {
-        if (!err) {
-          // Confirmed we have access to this pad.
-          padModel.removeInvitedEmail(authData.google.email);
+      padModel.setMe(authData.google.email, authData.google.displayName, queryParams.token,
+          function(err) {
+            if (!err) {
+              // Confirmed we have access to this pad.
+              padModel.removeInvitedEmail(authData.google.email);
 
-          initCollaboration(authData, padModel);
-          firepad = initFirepad(authData.uid, rootModel.refForPad(padModel.id));
+              initCollaboration(authData, padModel);
+              firepad = initFirepad(authData.uid, rootModel.refForPad(padModel.id));
 
-          firepad.on('ready', function() {
-            // Reset collaborator info as Firepad trashes color
-            padModel.setMe(authData.google.email, authData.google.displayName);
+              firepad.on('ready', function() {
+                // Reset collaborator info as Firepad trashes color
+                padModel.setMe(authData.google.email, authData.google.displayName);
+              });
+            }
           });
-        }
-      });
 
       // Remember this pad for the user.
       // Currently, this is the only way a pad ends up in a user's list; they have to visit it
@@ -405,11 +406,13 @@
       var email = invitation.elements['email'].value;
       if (!!email) {
         padModel.addInvitedEmail(email, function() {
-          gmail.sendInvite(authData.google, email, padModel.id, function(response) {
-            console.log('Invitation sent to ' + email + '.');
-          }, function(reason) {
-            console.log('Invitation failed to send to ' + email + ': ' + reason.result.error.message);
-            padModel.removeInvitedEmail(email); // Enable re-trying the failed send later.
+          padModel.accessToken(function(token) {
+            gmail.sendInvite(authData.google, email, padModel.id, token, function(response) {
+              console.log('Invitation sent to ' + email + '.');
+            }, function(reason) {
+              console.log('Invitation failed to send to ' + email + ': ' + reason.result.error.message);
+              padModel.removeInvitedEmail(email); // Enable re-trying the failed send later.
+            });
           });
         });
         invitation.elements['email'].value = '';
