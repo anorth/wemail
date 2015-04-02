@@ -119,6 +119,7 @@
       // Migrate invitation list schema. Added 1/4/2015 (pre-launch).
       invitedRef.once('value', function(snap) {
         var val = snap.val();
+        if (val == null) return;
         for (var i = 0; !!val[i]; ++i) {
           (function(index) {
             invitedRef.child(escapeEmail(val[index])).setWithPriority(val[index], Date.now(), function() {
@@ -159,11 +160,11 @@
         fbutil.once(usersRef.child(padRef.getAuth().uid), callback);
       },
 
-      setMe: function(email, displayName) {
+      setMe: function(email, displayName, onComplete) {
         usersRef.child(padRef.getAuth().uid).update({
           email: email,
           displayName: displayName
-        });
+        }, onComplete);
         setMeMetadata();
       },
 

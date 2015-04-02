@@ -10,7 +10,7 @@
         "pads": {
           "$pad_id": {
             // Allow pad owner to write (retract) their pad object for all collaborators.
-            ".write": "root.child($pad_id).child('owner').val() === auth.uid || root.child($pad_id).child('owner').val() === null"
+            ".write": "root.child('pads').child($pad_id).child('owner').val() === auth.uid || root.child('pads').child($pad_id).child('owner').val() === null"
           }
         }
       }
@@ -19,13 +19,21 @@
     "pads": {
       "$pad_id": {
         // Allow pad owner to delete the entire thing.
-        ".write": "(data.child('owner').val() === auth.uid || data.child('owner').val() === null) && newData.val() === null",
+        ".write": "newData.val() === null && (data.child('owner').val() === auth.uid || data.child('owner').val() === null)",
+
         // The pad owner's id , write-once
-        "owner": {".read": true, ".write": "data.val() === null && newData.val() === auth.uid"},
+        "owner": {".read": true, ".write": "!data.exists() && newData.val() === auth.uid"},
         // Collaborators can read/write headers and invite new collaborators.
         // FIXME(alex): Restrict access to collaborators
-        "headers": {".read": true, ".write": true},
-        "invited": {".read": true, ".write": true},
+        "headers": {
+          ".read": true,
+          ".write": true
+        },
+        // FIXME(alex): Restrict access to collaborators
+        "invited": {
+          ".read": true,
+          ".write": true
+        },
         // Per-user state: name, cursor etc. Writable by that user.
         // FIXME(alex): Restrict access to collaborators
         "users": {

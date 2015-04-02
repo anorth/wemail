@@ -35,6 +35,13 @@
     firebase.onAuth(function (authData) {
       if (authData != null) {
         console.log("Signed in " + authData.uid);
+
+        //_.each(['owner', 'headers', 'invited', 'users', 'chat', 'history', 'checkpoint'], function(key) {
+        //  firebase.child('pads').child('-JkjblF1dgntSQH1JT3d').child(key).once('value', function(snap) {
+        //    console.warn("Random user can see " + key, snap.val());
+        //  });
+        //});
+
         signedIn(authData);
 
         userModel = rootModel.user(authData.uid);
@@ -177,8 +184,11 @@
 
       firepad.on('ready', function() {
         // Set collaborator info after Firepad has initialized else it trashes color
-        padModel.setMe(authData.google.email, authData.google.displayName);
-        padModel.removeInvitedEmail(authData.google.email);
+        padModel.setMe(authData.google.email, authData.google.displayName, function(err) {
+          if (!err) {
+            padModel.removeInvitedEmail(authData.google.email);
+          }
+        });
       });
 
       // Remember this pad for the user.
