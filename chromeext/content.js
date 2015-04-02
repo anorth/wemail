@@ -37,6 +37,8 @@ function onDraftIdReady(draftInputField) {
 // Technique to detect new draft emails per:
 // http://developer.streak.com/2012/11/how-to-detect-dom-changes-in-css.html
 $('body').bind('animationstart MSAnimationStart webkitAnimationStart', function(event) {
+  var CALL_TO_ACTION = 'Share Draft';
+
   if (event.originalEvent.animationName == 'nodeInserted') {
     // This is the debug for knowing our listener worked!
     // event.target is the new node!
@@ -46,11 +48,18 @@ $('body').bind('animationstart MSAnimationStart webkitAnimationStart', function(
 
     var draftContainer = toolbar.children().first();
     var sendButton = draftContainer.find('div[role=button]').first();
+
+    // The animation triggers when the compose window is popped in/out,
+    // so don't create superfluous buttons.
+    if (sendButton.text() == CALL_TO_ACTION) {
+      return;
+    }
+
     var draftButton = sendButton.clone();
     draftButton
-      .text('Share Draft')
-      .attr('data-tooltip', 'Share Draft')
-      .attr('aria-label', 'Share Draft');
+      .text(CALL_TO_ACTION)
+      .attr('data-tooltip', CALL_TO_ACTION)
+      .attr('aria-label', CALL_TO_ACTION);
 
     draftButton.on('click', function() {
       var GMAIL_MESSAGE_SELECTOR = '.I5';
