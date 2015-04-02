@@ -4,6 +4,12 @@
   "description": "Draft emails with people from within Gmail.",
   "version": "0.1",
 
+  "icons": {
+    "16": "wemail16.png",
+    "48": "wemail48.png",
+    "128": "wemail128.png"
+  },
+
   "permissions": [ "activeTab" ],
 
   "background": {
