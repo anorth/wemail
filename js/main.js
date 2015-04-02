@@ -507,7 +507,7 @@
       showSpinner(false);
       console.log("Firepad ready");
     });
-    firepad.on('synced', function() { console.log("Firepad synced"); });
+    //firepad.on('synced', function() { console.log("Firepad synced"); });
     return firepad;
   }
 
