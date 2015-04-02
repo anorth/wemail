@@ -4,6 +4,22 @@
       "Apr", "May", "Jun", "Jul", "Aug", "Sep",
       "Oct", "Nov", "Dec"];
 
+  // From http://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript
+  var queryParams;
+  (function () {
+    var match,
+        pl     = /\+/g,  // Regex for replacing addition symbol with a space
+        search = /([^&=]+)=?([^&]*)/g,
+        decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); },
+        query  = window.location.search.substring(1);
+
+    queryParams = {};
+    while (match = search.exec(query)) {
+      queryParams[decode(match[1])] = decode(match[2]);
+    }
+    console.log("Query params", queryParams);
+  })();
+
   /////
   ///// Main
   /////
@@ -172,16 +188,19 @@
       padModel = rootModel.pad(padId, authData.uid);
       window.location.hash = padModel.id;
 
-      initCollaboration(authData, padModel);
-      firepad = initFirepad(authData.uid, rootModel.refForPad(padModel.id));
+      padModel.setMe(authData.google.email, authData.google.displayName, function(err) {
+        if (!err) {
+          // Confirmed we have access to this pad.
+          padModel.removeInvitedEmail(authData.google.email);
 
-      firepad.on('ready', function() {
-        // Set collaborator info after Firepad has initialized else it trashes color
-        padModel.setMe(authData.google.email, authData.google.displayName, function(err) {
-          if (!err) {
-            padModel.removeInvitedEmail(authData.google.email);
-          }
-        });
+          initCollaboration(authData, padModel);
+          firepad = initFirepad(authData.uid, rootModel.refForPad(padModel.id));
+
+          firepad.on('ready', function() {
+            // Reset collaborator info as Firepad trashes color
+            padModel.setMe(authData.google.email, authData.google.displayName);
+          });
+        }
       });
 
       // Remember this pad for the user.
