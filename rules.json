@@ -4,8 +4,8 @@
     "users": {
       "$uid": {
         // Read and write access for the owner of this user account, uid exactly matching the key ($uid)
-        ".write": "auth !== null && auth.uid === $uid",
-        ".read": "auth !== null && auth.uid === $uid",
+        ".write": "auth.uid === $uid",
+        ".read": "auth.uid === $uid",
         // List of pads shared with the user. This isn't directly used for access control.
         "pads": {
           "$pad_id": {
@@ -21,49 +21,49 @@
         // Allow pad owner to delete the entire thing.
         ".write": "newData.val() === null && (data.child('owner').val() === auth.uid || data.child('owner').val() === null)",
 
-        // The pad owner's id , write-once
-        "owner": {".read": true, ".write": "!data.exists() && newData.val() === auth.uid"},
-        // Collaborators can read/write headers and invite new collaborators.
-        // FIXME(alex): Restrict access to collaborators
-        "headers": {
-          ".read": true,
-          ".write": true
-        },
-        // FIXME(alex): Restrict access to collaborators
-        "invited": {
-          ".read": true,
-          ".write": true
-        },
         // Per-user state: name, cursor etc. Writable by that user.
-        // FIXME(alex): Restrict access to collaborators
+        // A record here implies that the user is a collaborator.
+        // FIXME(alex): Restrict write access to invited users
         "users": {
-          ".read": true,
+          ".read": "data.parent().child('users/'+auth.uid).exists()",
           "$uid": {
-            ".write": "auth !== null && auth.uid === $uid" // user can write their own record
+            ".write": "auth.uid === $uid" // user can write their own record
           }
+        },
+
+        // The pad owner's id, write-once by anyone. Readable by collaborators.
+        "owner": {
+          ".read":  "data.parent().child('users/'+auth.uid).exists()",
+          ".write": "!data.exists() && newData.val() === auth.uid"
+        },
+        // Collaborators can read/write headers.
+        "headers": {
+          ".read":  "data.parent().child('users/'+auth.uid).exists()",
+          ".write": "data.parent().child('users/'+auth.uid).exists()"
+        },
+        // Collaborators can invite others.
+        "invited": {
+          ".read":  "data.parent().child('users/'+auth.uid).exists()",
+          ".write": "data.parent().child('users/'+auth.uid).exists()"
         },
         // Chat messages. Collaborators can read, write only if recording their own user id.
-        // FIXME(alex): Restrict access to collaborators
         "chat": {
-          ".read": true,
+          ".read": "data.parent().child('users/'+auth.uid).exists()",
           "$msg_id": {
-            ".write": "auth.uid === newData.child('userId').val()"
+            ".write": "data.parent().parent().child('users/'+auth.uid).exists() && auth.uid === newData.child('userId').val()"
           }
         },
-        // History. Collaborators can read/write, but not overwrite/delete.
-        // FIXME(alex): Restrict access to collaborators
+        // History. Collaborators can read/write, but not overwrite/delete existing revisions.
         "history": {
-          ".read": true,
+          ".read": "data.parent().child('users/'+auth.uid).exists()",
           "$revision": {
-            /* Prevent overwriting existing revisions. */
-            ".write": "data.val() === null"
+            ".write": "data.parent().parent().child('users/'+auth.uid).exists() && !data.exists()"
           }
         },
         // Snapshots. Collaborators can read, write, only if they are author of revision being checkpointed.
-        // FIXME(alex): Restrict access to collaborators
         "checkpoint":  {
-          ".read": true,
-          ".write": "root.child($pad_id).child('history').child(newData.child('id').val()).child('a').val() === newData.child('a').val()",
+          ".read":  "data.parent().child('users/'+auth.uid).exists()",
+          ".write": "data.parent().child('users/'+auth.uid).exists() && data.parent().child('history').child(newData.child('id').val()).child('a').val() === newData.child('a').val()",
           ".validate": "newData.hasChildren(['a', 'o', 'id'])"
         }
       }

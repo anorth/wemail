@@ -35,13 +35,6 @@
     firebase.onAuth(function (authData) {
       if (authData != null) {
         console.log("Signed in " + authData.uid);
-
-        //_.each(['owner', 'headers', 'invited', 'users', 'chat', 'history', 'checkpoint'], function(key) {
-        //  firebase.child('pads').child('-JkjblF1dgntSQH1JT3d').child(key).once('value', function(snap) {
-        //    console.warn("Random user can see " + key, snap.val());
-        //  });
-        //});
-
         signedIn(authData);
 
         userModel = rootModel.user(authData.uid);
