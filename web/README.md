@@ -17,11 +17,11 @@ and open http://localhost:8000
 
 (Note: firebase does not work with file:/// protocol addresses)
 
-## Deployment
+## Deployment - Firebase Hosting
 
 To deploy to https://wemail.firebaseapp.com:
 
-    $ cd web/src/
+    $ cd web/
     $ firebase deploy
 
 See https://www.firebase.com/docs/hosting/quickstart.html for more info.
