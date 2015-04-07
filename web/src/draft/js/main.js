@@ -513,6 +513,11 @@
     padModel.onChatChanged(function() {
       chatContainer.scrollTop = chatContainer.scrollHeight;
     });
+
+    // Only show the chat window if there are collaborators
+    padModel.onCollaboratorsChanged(function(val) {
+      $('#rightpanel > .chat').toggle(_.size(val) > 1);
+    });
   }
 
   /**
