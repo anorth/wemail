@@ -87,7 +87,7 @@
         return;
       }
 
-      track('GMail draft requested');
+      track('Gmail draft requested');
       var draftId = event.data.draftId;
       if (gapi.auth.getToken()) {
         loadDraft(draftId);
@@ -137,7 +137,7 @@
       console.log('Initializing draft for draftId:', messageId);
 
       gmail.getDraft(messageId, function(draftId, threadId, headers, bodyHtml) {
-        track('GMail draft loaded');
+        track('Gmail draft loaded');
         // Populate the headers from the draft data.
         var HEADER_NAMES = ['Subject', 'To', 'Cc', 'Bcc', 'In-Reply-To', 'Message-ID', 'References'];
         console.log('got draft headers:', headers);
@@ -160,7 +160,7 @@
           firepad.on('ready', _.bind(firepad.setHtml, firepad, bodyHtml));
         }
       }, function(response) {
-        track('GMail draft load failed');
+        track('Gmail draft load failed');
         // failure
       });
     }
@@ -232,7 +232,12 @@
       padModel.owner(function(owner) {
         track('Draft opened', {'New': !padId, 'Owned': owner === authData.uid});
         // Migration to ensure pads have owners: first viewer wins.
-        if (owner == null) { padModel.setOwner(authData.uid); }
+        if (owner == null) {
+          owner = authData.uid;
+          padModel.setOwner(owner);
+        }
+
+        initOwnershipUi(owner == authData.uid);
       });
 
       padModel.onRemoved(function() {
@@ -499,6 +504,22 @@
     padModel.onChatChanged(function() {
       chatContainer.scrollTop = chatContainer.scrollHeight;
     });
+  }
+
+  /**
+   * Inits UI elements whose state depends on whether the user is the pad owner.
+   */
+  function initOwnershipUi(isOwner) {
+    var sendEl = document.getElementById('send');
+    if (isOwner) {
+      sendEl.disabled = false;
+      sendEl.innerHTML = 'Send from my Gmail';
+      sendEl.title = 'Send draft to final recipients';
+    } else {
+      sendEl.disabled = true;
+      sendEl.innerHTML = 'Sending disabled';
+      sendEl.title = 'Only the original author can send.';
+    }
   }
 
   function initFirepad(userId, padRef) {
