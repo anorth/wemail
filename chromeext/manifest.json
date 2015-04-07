@@ -1,13 +1,13 @@
 {
   "manifest_version": 2,
-  "name": "WeMail",
+  "name": "Mailcoup",
   "description": "Draft emails with people from within Gmail.",
   "version": "0.1",
 
   "icons": {
-    "16": "wemail16.png",
-    "48": "wemail48.png",
-    "128": "wemail128.png"
+    "16": "mailcoup16.png",
+    "48": "mailcoup48.png",
+    "128": "mailcoup128.png"
   },
 
   "permissions": [ "activeTab" ],
@@ -31,10 +31,10 @@
       "matches": [
         "http://localhost:8000/*",
         "http://localhost:63343/wemail/*",
-        "http://wemail.firebaseapp.com/*",
-        "https://wemail.firebaseapp.com/*"
+        "http://mailcoup.com/draft/*",
+        "https://mailcoup.com/draft/*"
       ],
-      "js": ["content_wemail.js"]
+      "js": ["content_mailcoup.js"]
     }
   ]
 }

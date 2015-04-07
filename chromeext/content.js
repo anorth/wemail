@@ -1,4 +1,4 @@
-console.log('WeMail extension loaded.');
+console.log('Mailcoup extension loaded.');
 
 /**
  * @param {JQuery}  messageForm The form element containing hidden field
@@ -24,7 +24,7 @@ function logMessageData(messageForm) {
 
 /**
  * This is called once the draft id exists and is ready to be relayed to the
- * WeMail page.
+ * Mailcoup page.
  */
 function onDraftIdReady(draftInputField) {
   chrome.runtime.sendMessage({
@@ -73,7 +73,7 @@ $('body').bind('animationstart MSAnimationStart webkitAnimationStart', function(
       console.debug('Checking if the draft id field is ready...', draftInputField);
       function pollDraftField() {
         if (draftInputField.val() && draftInputField.val() != String(undefined)) {
-          // Background script will be responsible for invoking new wemail page
+          // Background script will be responsible for invoking new mailcoup page
           console.debug('Draft id field is ready.');
           draftButton.text('Share Draft');
           onDraftIdReady(draftInputField);

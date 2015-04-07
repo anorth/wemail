@@ -1,7 +1,7 @@
-# WeMail chrome extension
+# Mailcoup chrome extension
 
 Hooks into Gmail, providing a "Share Draft" button in the compose view
-which starts the WeMail flow.
+which starts the Mailcoup flow.
 
 ## Installation
 
