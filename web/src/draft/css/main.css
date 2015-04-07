@@ -67,6 +67,10 @@ body {
   font-size: 14px;
 }
 
+#landing img {
+  height: 44px;
+}
+
 #container {
   width: 800px;
   margin: 0 auto 0 auto;

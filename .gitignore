@@ -1,5 +1,9 @@
-.idea/workspace.xml
 .idea/misc.xml
+.idea/watcherTasks.xml
+.idea/workspace.xml
+.sass-cache
 archive
 aws-credentials.sh
 node_modules
+# CSS/JS source maps
+*.map

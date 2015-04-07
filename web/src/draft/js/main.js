@@ -69,7 +69,6 @@
         maybeLoadDraft();
       } else {
         console.log("Signed out");
-        track('Signed out')
         signedOut();
       }
       if (!recordedSessionStart) {
@@ -291,7 +290,6 @@
       signIn: function() {
         gmail.authorize(onGoogleSignin);
         track('Sign-in clicked');
-
       },
 
       signOut: function() {
