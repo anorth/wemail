@@ -87,6 +87,7 @@ body {
   flex-direction: column;
   flex-grow: 2;
   text-align: right;
+  padding-top: 4px;
 }
 
 #panels {
@@ -95,6 +96,29 @@ body {
   height: 534px;
 }
 
+#signedin {
+  padding: 5px;
+}
+
+#signedin .photo {
+  border: 2px solid #eee;
+
+  -webkit-border-radius: 32px;
+  -moz-border-radius: 32px;
+  border-radius: 32px;
+
+  width: 36px;
+  height: 36px;
+
+  display: inline-block;
+  vertical-align: middle;
+
+  margin-right: 3px;
+}
+
+#signout {
+  padding: 5px;
+}
 
 /***** Left panel *****/
 

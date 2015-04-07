@@ -50,8 +50,12 @@
         <div id="title">
           <div class="title">Let's email</div>
           <div class="account">
-            <div>Signed in as <span id="signedin"></span></div>
             <div>
+              <span id="signedin">
+                <span class="photo"></span>
+                <span class="user"></span>
+              </span>
+              &bull;
               <a href="#" id="signout">Sign out</a>
             </div>
           </div>
@@ -113,6 +117,7 @@
       </div>
     </div>
 
+    <script src="../js/jquery.min.js"></script>
     <script src="js/bugsense.min.js"></script>
     <script src="js/lodash.min.js"></script>
     <script src="js/base64.js"></script>

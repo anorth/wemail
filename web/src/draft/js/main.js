@@ -402,8 +402,15 @@
   }
 
   function signedIn(authData) {
-    document.getElementById("signedin").innerText = authData.google.displayName +
-    ' <' + authData.google.email + '>';
+    $('#signedin').attr('title', 'Signed in as ' + authData.google.email);
+    $('#signedin .user').text(authData.google.displayName || authData.google.email);
+    var profilePicUrl = authData.google.cachedUserProfile.picture;
+    if (profilePicUrl) {
+      $('#signedin .photo').show().css('background-image', 'url(' + profilePicUrl + '?imgmax=32)')
+    } else {
+      $('#signedin .photo').hide();
+    }
+
     document.getElementById('landing').className = 'hidden';
     document.getElementById('app').className = '';
 
@@ -418,7 +425,9 @@
   }
 
   function signedOut() {
-    document.getElementById("signedin").innerText = '';
+    $('#signedin .user').text('');
+    $('#signedin .photo').css('background-image', '');
+
     document.getElementById('landing').className = '';
     document.getElementById('app').className = 'hidden';
 
