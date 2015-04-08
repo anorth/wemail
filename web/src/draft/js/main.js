@@ -227,6 +227,7 @@
         if (subject !== null) { // Don't trigger when pad being deleted
           userModel.rememberPad(padModel.id, subject);
         }
+        document.title = 'Mailcoup - ' + (subject || 'New draft');
       });
 
       padModel.owner(function(owner) {
