@@ -139,7 +139,7 @@ body {
   background-image: url("../../images/header.jpg");
   background-position: center top;
   background-repeat: no-repeat;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.9);
   position: relative;
   text-align: center;
 }
@@ -200,7 +200,7 @@ body {
 }
 
 #headers {
-  height: 130px;
+  height: 120px;
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 14px;
 }
@@ -218,22 +218,38 @@ body {
 }
 
 #firepad {
-  height: 400px;
+  height: 410px;
 }
 
 #firepad.firepad {
   /*height: 100%;*/
 }
 
+a.powered-by-firepad {
+  display: none;
+}
+
+#firepad .firepad-toolbar {
+  line-height: 41px;
+  height: 41px;
+}
+
 #firepad .CodeMirror {
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 13px;
   line-height: 16px;
-
+  top: 42px;
 }
 
-a.powered-by-firepad {
-  display: none;
+#firepad a.firepad-btn, #firepad a.firepad-btn:visited, #firepad a.firepad-btn:active {
+  background: none;
+  border: none;
+  font-size: inherit;
+  padding: 5px 3px 3px 5px;
+}
+
+#firepad a.firepad-btn:hover {
+  color: #7C7C7C;
 }
 
 
