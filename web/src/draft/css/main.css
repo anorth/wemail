@@ -123,16 +123,31 @@ body {
   margin-bottom: 40px;
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 14px;
+  background-color: #e3e3e3;
 }
 
 #container {
   width: 800px;
-  margin: 0 auto 0 auto;
+  margin: 1em auto 0 auto;
+}
+
+#titlewrapper {
+  display: flex;
+  justify-content: center;
+
+  background-attachment: fixed;
+  background-image: url("../../images/header.jpg");
+  background-position: center top;
+  background-repeat: no-repeat;
+  color: rgba(255, 255, 255, 0.8);
+  position: relative;
+  text-align: center;
 }
 
 #title {
+  width: 800px;
   display: flex;
-  margin: 8px 0 8px 0;
+  padding: 1em;
 }
 
 #title .title {

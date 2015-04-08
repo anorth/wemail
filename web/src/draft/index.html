@@ -33,9 +33,24 @@
     <!-- end Mixpanel -->
   </head>
   <body>
+    <div id="titlewrapper">
+        <div id="title">
+        <div class="title">Mailcoup</div>
+        <div class="account hidden">
+          <div>
+            <span id="signedin">
+              <span class="photo"></span>
+              <span class="user"></span>
+            </span>
+            &bull;
+            <a href="#" id="signout">Sign out</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="container">
       <div id="landing">
-        <h1>Wemail</h1>
         <ol>
           <li>Invite collaborators</li>
           <li>Draft together, discuss in real time</li>
@@ -47,19 +62,6 @@
       </div>
 
       <div id="app" class="hidden">
-        <div id="title">
-          <div class="title">Let's email</div>
-          <div class="account">
-            <div>
-              <span id="signedin">
-                <span class="photo"></span>
-                <span class="user"></span>
-              </span>
-              &bull;
-              <a href="#" id="signout">Sign out</a>
-            </div>
-          </div>
-        </div>
         <div id="panels">
           <div id="leftpanel">
             <form id="headers">

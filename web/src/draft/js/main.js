@@ -411,8 +411,9 @@
       $('#signedin .photo').hide();
     }
 
-    document.getElementById('landing').className = 'hidden';
-    document.getElementById('app').className = '';
+    $('#landing').addClass('hidden');
+    $('#app').removeClass('hidden');
+    $('.account').removeClass('hidden');
 
     if (!window.location.hash.slice((1))) {
       var savedHash = window.localStorage.getItem('wemail.hash');
@@ -428,8 +429,9 @@
     $('#signedin .user').text('');
     $('#signedin .photo').css('background-image', '');
 
-    document.getElementById('landing').className = '';
-    document.getElementById('app').className = 'hidden';
+    $('#landing').removeClass('hidden');
+    $('#app').addClass('hidden');
+    $('.account').addClass('hidden');
 
     var hash = window.location.hash.slice(1);
     if (!!hash) {
