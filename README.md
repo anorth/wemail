@@ -14,3 +14,4 @@ WeMail consists of the following components. See their READMEs for instructions.
 - Task Tracking: https://app.asana.com/0/30260233033247
 - Google Developers Console: https://console.developers.google.com/project/wemail-dev
 - Firebase: https://wemail.firebaseio.com/
+- JS production errors: https://mint.splunk.com/dashboard/project/f837bbea
