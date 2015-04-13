@@ -59,8 +59,8 @@
      */
     sendInvite: function(googleAuth, toEmail, padId, token, onSuccess, onFailure) {
       var body =
-          'Hi - Could you help me drafting an email.\n' +
-          'Can you please take a look at https://wemail.firebaseapp.com/?token=' + token + '#' + padId + ' ?\n' +
+          'Hi - I need help drafting an email.\n' +
+          'Can you please take a look at http://mailcoup.com/draft?token=' + token + '#' + padId + ' ?\n' +
           '\n' +
           'Thanks!';
 
