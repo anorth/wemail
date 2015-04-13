@@ -39,9 +39,15 @@
     var initiallySignedIn = !!firebase.getAuth();
     var recordedSessionStart = false;
 
-    // Google cookie doesn't actually get wiped, so we're technically always still logged in.
-    // ... but take advantage of the fact that we signed out from firebase.
-    if (firebase.getAuth()) {
+    var hashAccessToken = maybeGetHashAccessToken(document.location.hash);
+    if (hashAccessToken) {
+      // User just bounced from a Google sign-in page. Sign them in to Firebase as well.
+      onGoogleSignin({'access_token': hashAccessToken});
+      window.location.hash = '';  // assumes for now no redirects to a specific pad
+    } else if (firebase.getAuth()) {
+      // Google cookie doesn't actually get wiped, so we're technically always still logged in.
+      // ... but take advantage of the fact that we signed out from firebase.
+
       // Since the Google token expires after 1 hr, get a new one:
       gmail.checkAuth(function(response) {
         if (response.error) {
@@ -665,6 +671,29 @@
       // Suppress mysterious IE10 errors
       try { node.select(); }
       catch(_e) {}
+    }
+  }
+
+  /**
+   * Returns access_token or empty string if not present in hash.
+   *
+   * @param  {String} hash The hash fragment from the URL.
+   * @returns  {String}
+   */
+  // e.g. URL: http://mailcoup.com/draft/#access_token=ya29.VAHWo0rtfF6rMCrinWelhVeaxfe8B0HpX4vGtxAVzDI1M8pDtGgTGv8nHz8nabM55dHXhxjvSTnVgg&token_type=Bearer&expires_in=3600&code=4/VNQJS5B_9g6qJfUl56lgBBZ2AJlUVf62tMPnvF5QsgQ.4kzJvt0Ty6sUgrKXntQAax10cmBjmQI
+  function maybeGetHashAccessToken(hash) {
+    if (!hash) { return ''; };
+
+    hash = hash.substr(1);  // remove '#' character
+    if (!hash) { return ''; };
+
+    // Assumes access_token is the first 'param' passed in the hash.
+    var firstKeyValue = hash.split('&')[0].split('=');
+
+    if (firstKeyValue.length == 2 && firstKeyValue[0] == 'access_token') {
+      return firstKeyValue[1];
+    } else {
+      return '';
     }
   }
 

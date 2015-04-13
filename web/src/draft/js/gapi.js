@@ -46,6 +46,19 @@
       }, callback);
     },
 
+    /**
+     * For non-interactive sign-in, provide a URL to sign in to Google and
+     * redirect back to the draft page.
+     *
+     * @param  {String} redirectUri The URI to redirect to after Google auth.
+     */
+    getSignInUrl: function(redirectUri) {
+      return 'https://accounts.google.com/o/oauth2/auth?' +
+        'response_type=token&' +
+        'redirect_uri=' + redirectUri + '&' +
+        'scope=' + SCOPE.replace(/ /g, '+') + '&' +
+        'client_id=' + CLIENT_ID;
+    },
 
     /**
      * Sends an email invite to a collaborator to join the draft.
