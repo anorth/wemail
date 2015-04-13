@@ -13,7 +13,6 @@
   var SCOPE = [
     'email',
     'https://www.googleapis.com/auth/gmail.compose',  // to send email
-    'https://www.googleapis.com/auth/gmail.modify'  // to mark sent messages as read/archived
   ].join(' ');
 
   window.gmail = {
@@ -216,18 +215,10 @@
 
     console.log("Sending email", headerLines, body);
     return gapiRequest('POST', 'messages/send', requestParams).then(function(response) {
-      console.log("GMail send succeeded", response);
-      var msgId = response.result.id;
-      gapiRequest('POST', 'messages/'+ msgId + '/modify', {
-        removeLabelIds: ['INBOX', 'UNREAD']
-      }).then(function(archiveResponse) {
-        console.log("Marked read and archived", archiveResponse)
-      }, function(archiveReason) {
-        console.log("Failed to read and archive", archiveReason)
-      });
+      console.log("Gmail send succeeded", response);
       onSuccess(response);
     }, function(reason) {
-      console.error("GMail send failed", reason.result.error.message);
+      console.error("Gmail send failed", reason.result.error.message);
       onFailure(reason);
     });
   }
