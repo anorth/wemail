@@ -389,12 +389,16 @@ ul#messages .chat-message {
 }
 
 #otherpads li {
-  display: inline-block;
+  padding: 4px 4px 4px 10px;
 }
 
-#otherpads li + li:before {
-  margin: 0 6px 0 6px;
-  content: "|";
+#otherpads a {
+  text-decoration: none;
+  color: black;
+}
+
+#otherpads li:nth-child(odd) {
+  background-color: #eee;
 }
 
 /***** Spinner *****/

@@ -449,10 +449,10 @@
   }
 
   function bindUserData(userModel) {
-    bindList(userModel.onPadListChanged, document.getElementById('otherpads'), function(val, key) {
-      var title = (!!val && !!val.subject && val.subject) || key;
-      return '<a href="#' + key + '">' + title + '</a>';
-    });
+    bindList(userModel.onPadListChanged, document.getElementById('otherpads'), function(val, padId) {
+      var title = (!!val && !!val.subject && val.subject) || padId;
+      return '<a href="#' + padId + '">' + title + '</a>';
+    }, true /* newest displayed first */);
   }
 
   function initCollaboration(authData, padModel) {
@@ -637,12 +637,14 @@
    * @param {Function} listenFn
    * @param {Element} listElt
    * @param {Function} renderFn
+   * @param {Boolean} reverse If provided and true, the list will be iterated in reverse.
    */
-  function bindList(listenFn, listElt, renderFn) {
+  function bindList(listenFn, listElt, renderFn, reverse) {
     if (!renderFn) { renderFn = _.identity; }
+    var iterateFn = reverse ? _.forOwnRight : _.forOwn;
     listenFn(function(value) {
       var html = '';
-      _.forOwn(value, function(val, key) {
+      iterateFn(value, function(val, key) {
         html += '<li>' + renderFn(val, key) + '</li>';
       });
       listElt.innerHTML = html;
