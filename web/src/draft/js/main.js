@@ -349,32 +349,51 @@
               'Body Length': body.length
 
             });
-            gmail.sendHtmlEmail(googleAuth,
-                toRecipients,
-                ccRecipients,
-                bccRecipients,
-                headers['subject'],
-                extraHeaders,
-                body,
-                threadId,
-                function (success) {
-                  console.log("Mail was sent!");
-                  track('Email send succeeded');
 
-                  // TODO(adam): consider using the chrome extension to refresh the UI, as the
-                  // deleted draft still appears.
-                  if (headers['gmail-draft-id']) {
-                    gmail.deleteDraft(headers['gmail-draft-id']);
-                  }
+            var sendEmail = function(threadId, onSuccess, onFailure) {
+              gmail.sendHtmlEmail(googleAuth,
+                  toRecipients,
+                  ccRecipients,
+                  bccRecipients,
+                  headers['subject'],
+                  extraHeaders,
+                  body,
+                  threadId,
+                  onSuccess,
+                  onFailure);
+            };
 
-                  onSuccess(success);
-                  deletePad(authData);
-                }, function (reason) {
-                  console.log("Failed to send :-(");
-                  track('Email send failed');
-                  onFailure(reason);
-                  signOut();
-                });
+            var onSendSuccess = function(success) {
+              console.log("Mail was sent!");
+              track('Email send succeeded');
+
+              // TODO(adam): consider using the chrome extension to refresh the UI, as the
+              // deleted draft still appears.
+              if (headers['gmail-draft-id']) {
+                gmail.deleteDraft(headers['gmail-draft-id']);
+              }
+
+              onSuccess(success);
+              deletePad(authData);
+            };
+
+            var onSendFailure = function(reason) {
+              console.log("Failed to send :-(");
+              track('Email send failed');
+              onFailure(reason);
+              signOut();
+            };
+
+            sendEmail(threadId, onSendSuccess, function(reason) {
+              if (reason.status == 404) {
+                // threadId is not found, meaning the original thread was deleted.
+                // It's safe to send the email without the thread id, i.e. a solo message.
+                threadId = '';
+                sendEmail(threadId, onSendSuccess, onSendFailure);
+              } else {
+                onSendFailure(reason);
+              }
+            });
           });
         });
       }
