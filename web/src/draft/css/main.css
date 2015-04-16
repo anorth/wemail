@@ -339,7 +339,8 @@ ul#messages .chat-timestamp {
 ul#messages .chat-message {
   font-size: 12px;
   color: #222;
-  white-space: pre;
+  white-space: pre;  /* so that newlines within chat msg are preserved */
+  overflow-wrap: break-word;
 }
 
 #chat-input {
