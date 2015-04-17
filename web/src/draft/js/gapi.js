@@ -98,7 +98,7 @@
       var headerLines = [
         'To: ' + toEmail,
         'From: ' + formatFromGoogle(googleAuth),
-        'Subject: ' + subject
+        'Subject: ' + makeSubjectSafe(subject)
       ];
       return sendEmailRequest(headerLines, body, '', onSuccess, onFailure);
     },
@@ -124,7 +124,7 @@
       console.log("Sending HTML email to " + toRecipients.join(', ') + ', subject: "' + subject + '"');
       var headerLines = [
         'From: ' + formatFromGoogle(googleAuth),
-        'Subject: ' + subject,
+        'Subject: ' + makeSubjectSafe(subject),
         'Content-Type: text/html; charset=UTF-8'
       ];
       _.each(extraHeaders, function(val, key) {
@@ -263,6 +263,26 @@
 
   function b64ToUtf8( str ) {
     return decodeURIComponent(escape(base64.decode( str )));
+  }
+
+  /**
+   * Ensure a subject string is displayed only with ASCII characters.
+   * If only ASCII already in subject, string is left as is; otherwise encode
+   * per http://ncona.com/2011/06/using-utf-8-characters-on-an-e-mail-subject/
+   *
+   * @returns  {String} ASCII only characters for a subject string.
+   */
+  // TODO(adam): perfect candidate for unit test, e.g. "– encoding test"
+  function makeSubjectSafe(str) {
+    // http://stackoverflow.com/questions/13522782/how-can-i-tell-if-a-string-has-any-non-ascii-characters-in-it
+    var ascii = /^[ -~]+$/;
+
+    if (ascii.test(str)) {
+      return str;
+    } else {
+      // string has non-ascii characters
+      return '=?utf-8?B?' + utf8ToB64(str) + '?=';
+    }
   }
 
   /**
